@@ -1,4 +1,3 @@
-type DifficultyType = "easy" | "medium" | "hard";
 
 export interface IGame {
   _id?: string;
@@ -8,6 +7,7 @@ export interface IGame {
   inviteCode: string;
   spectatorCode: string;
   status: GameStatus;
+  difficulty: DifficultyType;
   problemId: string;
   createdAt: Date;
   updatedAt?: Date;
@@ -20,6 +20,12 @@ export enum GameStatus {
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled'
+}
+
+export enum DifficultyType {
+  EASY = 'easy',
+  MEDIUM = 'medium',
+  HARD = 'hard'
 }
 
 export interface CreateGameRequest {
