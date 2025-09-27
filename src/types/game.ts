@@ -1,17 +1,26 @@
 
+export interface IUser {
+  _id?: string;
+  name?: string;
+  email?: string;
+  image?: string;
+}
+
 export interface IGame {
   _id?: string;
-  hostId: string;
-  challengerId?: string;
+  host: string | IUser;
+  challenger?: string | IUser;
   inviteCode: string;
-  spectatorCode: string;
   status: GameStatus;
   difficulty: DifficultyType;
   problemId: string;
-  createdAt: Date;
-  updatedAt?: Date;
-  expiresAt: Date;
   timeLimit: number;
+  hostJoined: boolean;
+  challengerJoined: boolean;
+  hostCode: string;
+  challengerCode: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export enum GameStatus {
@@ -28,8 +37,7 @@ export enum DifficultyType {
 }
 
 export interface CreateGameRequest {
-  hostId: string;
-  expiresAt: Date;
+  host: string;
   timeLimit: number;
   difficulty: DifficultyType;
 }
