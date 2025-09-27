@@ -1,26 +1,7 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
+import type { IUser } from '../types/game';
 
-export interface IUser {
-  id: string;
-  name?: string;
-  email: string;
-  emailVerified?: boolean;
-  image?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface IUserDocument extends Omit<IUser, 'id'>, Document {
-  id: string;
-}
-
-const userSchema = new Schema<IUserDocument>({
-  id: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
-  },
+const userSchema = new Schema<IUser>({
   name: {
     type: String,
     required: false
@@ -57,4 +38,4 @@ userSchema.pre('save', function (next) {
   next();
 });
 
-export const User = mongoose.model<IUserDocument>('user', userSchema);
+export const User = mongoose.model<IUser>('user', userSchema);
