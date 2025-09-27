@@ -1,7 +1,7 @@
 import { type Request, type Response } from 'express';
 import { Game } from '../models/Game';
 import { generateUniqueCode, generateInviteLink } from '../utils/linkGenerator';
-import type { CreateGameRequest, CreateGameResponse } from '../types/game';
+import type { CreateGameRequest, CreateGameResponse, IGame, JoinGameRequest, JoinGameResponse } from '../types/game';
 import mongoose from 'mongoose';
 
 export const createGame = async (req: Request, res: Response): Promise<void> => {
@@ -16,8 +16,6 @@ export const createGame = async (req: Request, res: Response): Promise<void> => 
 
     const newGame = new Game({
       hostId,
-      players: [],
-      spectators: [],
       inviteCode,
       spectatorCode,
       problemId,
@@ -27,7 +25,7 @@ export const createGame = async (req: Request, res: Response): Promise<void> => 
     })
 
     const savedGame = await newGame.save();
-    const inviteLink = generateInviteLink(inviteCode!);
+    const inviteLink = generateInviteLink(inviteCode!, savedGame._id!.toString());
 
     const response: CreateGameResponse = {
       gameId: savedGame._id!.toString(),
@@ -93,6 +91,85 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
   } catch (error) {
     console.error('Error fetching game by ID:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const joinGame = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { gameId, userId, inviteCode }: JoinGameRequest = req.body;
+
+    if (!gameId || !userId || !inviteCode) {
+      res.status(400).json({
+        success: false,
+        role: 'spectator',
+        message: 'Missing required fields'
+      });
+      return;
+    }
+
+    const game = await Game.findById(gameId);
+
+    if (!game) {
+      res.status(404).json({
+        success: false,
+        role: 'spectator',
+        message: 'Game not found'
+      });
+      return;
+    }
+
+    // Check if user is the host
+    if (game.hostId === userId) {
+      const response: JoinGameResponse = {
+        success: true,
+        role: 'host',
+        message: 'Host has joined the game',
+      };
+      res.status(200).json(response);
+      return;
+    }
+
+    // Check if invite code is valid
+    if (game.inviteCode === inviteCode) {
+      // Check if there's already a challenger
+      if (game.challengerId) {
+        const response: JoinGameResponse = {
+          success: false,
+          role: 'spectator',
+          message: 'Someone has already joined as challenger. You can spectate instead.'
+        };
+        res.status(200).json(response);
+        return;
+      }
+
+      // Join as challenger
+      game.challengerId = userId;
+      await game.save();
+
+      const response: JoinGameResponse = {
+        success: true,
+        role: 'challenger',
+        message: 'Successfully joined as challenger',
+      };
+      res.status(200).json(response);
+      return;
+    }
+
+    // Invalid invite code - join as spectator (we don't track spectators)
+    const response: JoinGameResponse = {
+      success: true,
+      role: 'spectator',
+      message: 'Joined as spectator'
+    };
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error('Error joining game:', error);
+    res.status(500).json({
+      success: false,
+      role: 'spectator',
+      message: 'Internal server error'
+    });
   }
 };
 

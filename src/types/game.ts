@@ -2,8 +2,7 @@
 export interface IGame {
   _id?: string;
   hostId: string;
-  players: string[];
-  spectators: string[];
+  challengerId?: string;
   inviteCode: string;
   spectatorCode: string;
   status: GameStatus;
@@ -39,4 +38,16 @@ export interface CreateGameResponse {
   gameId: string;
   inviteLink: string;
   inviteCode: string;
+}
+
+export interface JoinGameRequest {
+  gameId: string;
+  userId: string;
+  inviteCode: string;
+}
+
+export interface JoinGameResponse {
+  success: boolean;
+  role: 'host' | 'challenger' | 'spectator';
+  message: string;
 }

@@ -17,9 +17,9 @@ export const generateUniqueCode = (length: number = 8): string => {
   return result;
 };
 
-export const generateInviteLink = (inviteCode: string, baseUrl?: string): string => {
+export const generateInviteLink = (inviteCode: string, battleId: string, baseUrl?: string): string => {
   const base = baseUrl || clientBaseUrl;
-  return `${base}/join/${inviteCode}`;
+  return `${base}/battle/${battleId}?inviteCode=${inviteCode}`;
 };
 
 export const generateSpectatorLink = (spectatorCode: string, baseUrl?: string): string => {
