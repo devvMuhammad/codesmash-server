@@ -200,3 +200,42 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export const leaveGame = async (gameId: string, userId: string, role: string): Promise<void> => {
+  try {
+    if (!gameId || !userId || !role) {
+      return;
+    }
+
+    // Only handle host and challenger roles
+    if (role !== 'host' && role !== 'challenger') {
+      console.log(`User ${userId} with role '${role}' left game ${gameId} - no action needed`);
+      return;
+    }
+
+    const game = await Game.findById(gameId);
+    if (!game) {
+      console.error(`Game ${gameId} not found when user ${userId} tried to leave`);
+      return;
+    }
+
+    if (role === 'host' && game.host.toString() === userId) {
+      if (game.hostJoined) {
+        game.hostJoined = false;
+        console.log(`Host ${userId} left game ${gameId}`);
+      }
+    }
+
+    if (role === 'challenger' && game.challenger?.toString() === userId) {
+      if (game.challengerJoined) {
+        game.challengerJoined = false;
+        console.log(`Challenger ${userId} left game ${gameId}`);
+      }
+    }
+
+    await game.save();
+
+  } catch (error) {
+    console.error('Error in leaveGame:', error);
+  }
+};
+
