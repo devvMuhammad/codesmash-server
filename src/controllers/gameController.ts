@@ -206,7 +206,7 @@ export const leaveGame = async (gameId: string, userId: string, role: string): P
       return;
     }
 
-    // Only handle host and challenger roles
+    // skip spectator role
     if (role !== 'host' && role !== 'challenger') {
       console.log(`User ${userId} with role '${role}' left game ${gameId} - no action needed`);
       return;
@@ -238,4 +238,40 @@ export const leaveGame = async (gameId: string, userId: string, role: string): P
     console.error('Error in leaveGame:', error);
   }
 };
+
+export const handleChallengerQuit = async (gameId: string, userId: string): Promise<boolean> => {
+  try {
+    if (!gameId || !userId) {
+      console.error('Missing gameId or userId for challenger quit');
+      return false;
+    }
+
+    const game = await Game.findById(gameId);
+    if (!game) {
+      console.error(`Game ${gameId} not found when challenger ${userId} tried to quit`);
+      return false;
+    }
+
+    // Verify user is actually the challenger
+    if (!game.challenger || game.challenger.toString() !== userId) {
+      console.error(`User ${userId} is not the challenger for game ${gameId}`);
+      return false;
+    }
+
+    // Remove challenger from game
+    game.challenger = undefined;
+    game.challengerJoined = false;
+
+    await game.save();
+    console.log(`Challenger ${userId} quit game ${gameId} - game reset to waiting for challenger`);
+
+    return true;
+
+  } catch (error) {
+    console.error('Error in handleChallengerQuit:', error);
+    return false;
+  }
+};
+
+
 

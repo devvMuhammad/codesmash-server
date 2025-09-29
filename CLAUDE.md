@@ -176,7 +176,7 @@ const socket = io('http://localhost:3001', {
 // Game action events
 'game:submit-solution'   // Player submits code
 'game:run-code'         // Player runs/tests code
-'game:forfeit'          // Player forfeits game
+'game:quit'          // Player forfeits game
 ```
 
 ## Project Structure
