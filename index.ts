@@ -8,6 +8,7 @@ import cors from "cors";
 import { connectToDatabase } from "./src/config/database";
 import apiRoutes from "./src/routes/apiRoutes";
 import { leaveGame, handleChallengerQuit, startBattle, markChallengerReady } from "./src/controllers/gameController";
+import { codeStorage } from "./src/services/codeStorage";
 // Import models to register them with Mongoose
 import "./src/models/User";
 import "./src/models/Game";
@@ -148,6 +149,24 @@ io.on("connection", (socket) => {
     } else {
       console.log(`Failed to mark challenger ready for user ${user.id} in game ${gameId}`);
     }
+  });
+
+  socket.on("code_update", (data) => {
+    console.log("code_update event received", socket.id, "role:", role);
+
+    if (role !== "host" && role !== "challenger") {
+      console.log(`User ${user.id} with role ${role} tried to update code - ignoring`);
+      return;
+    }
+
+    const { code } = data;
+
+    // Update the player's code using the service
+    codeStorage.updatePlayerCode(gameId, role as 'host' | 'challenger', code);
+
+    // Broadcast to opponent
+    socket.to(gameId).emit("opponent_code_update", { code, role });
+    console.log(`Code updated for ${role} in game ${gameId}, broadcasted to opponent`);
   });
 
   socket.on("disconnect", async () => {
