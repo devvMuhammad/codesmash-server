@@ -108,13 +108,15 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    console.log("game.host.toString()", game.host.toString(), userId)
     // Check if user is the host
     if (game.host.toString() === userId) {
+      console.log("game.host.toString()", game.host.toString(), userId)
 
       console.log("join host game")
-      game.hostJoined = true;
-      await game.save();
+      if (!game.hostJoined) {
+        game.hostJoined = true;
+        await game.save();
+      }
       console.log("higaya ahiahuhs")
 
       const response: JoinGameResponse = {
