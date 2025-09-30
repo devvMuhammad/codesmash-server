@@ -2,7 +2,7 @@ import { type Request, type Response } from 'express';
 import { Game } from '../models/Game';
 import { User } from '../models/User'; // Import User model for population
 import { generateUniqueCode, generateInviteLink } from '../utils/linkGenerator';
-import { type CreateGameRequest, type CreateGameResponse, type IGame, type JoinGameRequest, type JoinGameResponse, GameStatus, type GameResult } from '../types/game';
+import { type CreateGameRequest, type CreateGameResponse, type IGame, type JoinGameRequest, type JoinGameResponse, GameStatus, type GameResult, GameResultReason } from '../types/game';
 import mongoose from 'mongoose';
 import { mockProblem } from '../mock/problem';
 import { codeStorage } from '../services/codeStorage';
@@ -417,7 +417,7 @@ export const forfeitGame = async (gameId: string, userId: string, role: string):
 
     // Create result object
     const gameResult: GameResult = {
-      reason: 'forfeit',
+      reason: GameResultReason.FORFEIT,
       winner: winnerId || '',
       message: `${forfeiterName} forfeited the game. ${winnerName} wins by forfeit!`
     };
