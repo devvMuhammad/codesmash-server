@@ -7,7 +7,7 @@ import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { connectToDatabase } from "./src/config/database";
 import apiRoutes from "./src/routes/apiRoutes";
-import { leaveGame, handleChallengerQuit, startBattle, markChallengerReady } from "./src/controllers/gameController";
+import { leaveGame, handleChallengerQuit, startBattle, markChallengerReady, forfeitGame } from "./src/controllers/gameController";
 import { codeStorage } from "./src/services/codeStorage";
 // Import models to register them with Mongoose
 import "./src/models/User";
@@ -167,6 +167,29 @@ io.on("connection", (socket) => {
     // Broadcast to opponent
     socket.to(gameId).emit("opponent_code_update", { code, role });
     console.log(`Code updated for ${role} in game ${gameId}, broadcasted to opponent`);
+  });
+
+  socket.on("forfeit_game", async () => {
+    console.log("forfeit_game event received", socket.id, "role:", role);
+
+    if (role !== "host" && role !== "challenger") {
+      console.log(`User ${user.id} with role ${role} tried to forfeit - ignoring`);
+      return;
+    }
+
+    const forfeitResult = await forfeitGame(gameId, user.id, role);
+
+    if (forfeitResult.success && forfeitResult.result) {
+      // Notify both players that game has finished
+      io.to(gameId).emit("game_finished", {
+        result: forfeitResult.result,
+        gameStatus: "completed"
+      });
+
+      console.log(`User ${user.id} (${role}) successfully forfeited game ${gameId}`);
+    } else {
+      console.log(`Failed to forfeit game for user ${user.id} (${role}) in game ${gameId}`);
+    }
   });
 
   socket.on("disconnect", async () => {
