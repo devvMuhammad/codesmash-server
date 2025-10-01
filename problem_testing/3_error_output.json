@@ -1,0 +1,13 @@
+{
+  "stdout": "=== TEST_RESULTS_START ===\n[\n  {\n    \"testCase\": 1,\n    \"description\": \"Basic case: [2,7,11,15], target 9\",\n    \"input\": {\n      \"nums\": [\n        2,\n        7,\n        11,\n        15\n      ],\n      \"target\": 9\n    },\n    \"expected\": [\n      0,\n      1\n    ],\n    \"actual\": null,\n    \"status\": \"ERROR\",\n    \"error\": \"someUndefinedFunction is not defined\"\n  }\n]\n=== TEST_RESULTS_END ===\n",
+  "time": "0.024",
+  "memory": 7920,
+  "stderr": null,
+  "token": "9038c291-7438-424a-ab2a-1dfeed7e686a",
+  "compile_output": null,
+  "message": null,
+  "status": {
+    "id": 3,
+    "description": "Accepted"
+  }
+}
