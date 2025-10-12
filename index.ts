@@ -12,6 +12,7 @@ import { codeStorage } from "./src/services/codeStorage";
 // Import models to register them with Mongoose
 import "./src/models/User";
 import "./src/models/Game";
+import "./src/models/Problem";
 
 dotenv.config();
 

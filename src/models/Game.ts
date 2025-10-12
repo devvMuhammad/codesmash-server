@@ -26,9 +26,10 @@ const gameSchema = new Schema<IGameDocument>({
     enum: Object.values(GameStatus),
     default: GameStatus.WAITING
   },
-  problemId: {
-    type: String,
-    required: true
+  problem: {
+    type: Schema.Types.ObjectId,
+    ref: 'problem',
+    required: false
   },
   difficulty: {
     type: String,
