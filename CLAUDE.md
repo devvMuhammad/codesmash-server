@@ -211,6 +211,66 @@ Content-Type: application/json
 - `404 Not Found` - Problem not found
 - `500 Internal Server Error` - Database/Judge0 API error
 
+#### Run Code with Sample Test Cases
+```http
+POST /api/problems/:problemId/run
+Content-Type: application/json
+```
+
+**Parameters**:
+- `problemId` - MongoDB ObjectId string
+
+**Request Body**:
+```typescript
+{
+  code: string                    // User's code to run
+  language: "javascript" | "python" | "java" | "cpp"
+  gameId?: string                 // Optional game context
+}
+```
+
+**Response** (200 OK):
+```typescript
+{
+  success: boolean                // True if all sample tests passed
+  stdout: string                  // Full stdout output from code execution
+  sampleTestResults: [
+    {
+      testCase: number            // Sample test case number (1-indexed)
+      input: string               // Sample test input description
+      expectedOutput: string      // Expected output for this sample
+      actualOutput: string        // Actual output from user code
+      passed: boolean             // True if this sample test passed
+    }
+  ]
+  executionTime: string           // Execution time (e.g., "0.024")
+  memory: number                  // Memory used in KB
+  compileError?: string           // Compilation error if any
+  runtimeError?: string           // Runtime error if any
+  statusDescription?: string      // Human-readable status description
+}
+```
+
+**How It Works**:
+1. User runs code with selected language for quick testing
+2. Server fetches problem from database (with sampleTestCases and sampleTestCasesOutput)
+3. Code is executed via Judge0 API with **sample** testCases only (faster than full submit)
+4. User's code reads from stdin, processes, and writes to stdout
+5. Server compares stdout with sampleTestCasesOutput line by line
+6. Returns full stdout + sample test results for debugging
+
+**Key Differences from /submit**:
+- Uses `sampleTestCases` (2-3 tests) instead of full `testCases` (10-20+ tests)
+- Returns full stdout for debugging
+- Faster execution (fewer test cases)
+- Does NOT update game state or determine winner
+- Intended for testing/debugging before final submission
+
+**Error Responses**:
+- `400 Bad Request` - Missing required fields or invalid problemId/language
+- `404 Not Found` - Problem not found
+- `500 Internal Server Error` - Database/Judge0 API error
+
 ## WebSocket Events (Socket.IO)
 
 ### Connection
@@ -314,8 +374,10 @@ server/
   title: String (required)         // Problem title (e.g., "Two Sum")
   description: String (required)   // Full problem description with examples
   difficulty: String (enum)        // easy|medium|hard
-  testCases: String (required)     // Test cases in line-by-line format (stdin)
-  correctOutput: String (required) // Expected outputs line by line
+  testCases: String (required)     // All test cases in line-by-line format (stdin)
+  correctOutput: String (required) // Expected outputs for all tests line by line
+  sampleTestCases: String (required, default: "")     // Sample test cases (2-3) for quick testing
+  sampleTestCasesOutput: String (required, default: "") // Expected outputs for sample tests
   initialCodes: {                  // Starter code for each language
     python: String (required)      // Python starter code (HackerRank style)
     javascript: String (required)  // JavaScript starter code
