@@ -9,6 +9,8 @@ import { connectToDatabase } from "./src/config/database";
 import apiRoutes from "./src/routes/apiRoutes";
 import { leaveGame, handleChallengerQuit, startBattle, markChallengerReady, forfeitGame } from "./src/controllers/gameController";
 import { codeStorage } from "./src/services/codeStorage";
+import { gameTimerService } from "./src/services/gameTimerQueue";
+import redisClient from "./src/config/redis";
 // Import models to register them with Mongoose
 import "./src/models/User";
 import "./src/models/Game";
@@ -52,8 +54,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to MongoDB
-connectToDatabase().catch(console.error);
+// Connect to MongoDB and initialize services
+connectToDatabase()
+  .then(async () => {
+    console.log('Database connected, initializing services...');
+
+    // Initialize game timer worker
+    gameTimerService.initializeWorker(io);
+
+    // Resume active game timers after server restart
+    // await gameTimerService.resumeActiveTimers(io);
+  })
+  .catch(console.error);
 
 // better auth router for handling auth requests
 app.all("/api/auth/*splat", toNodeHandler(auth));
@@ -63,7 +75,6 @@ app.use("/api", apiRoutes);
 
 io.on("connection", (socket) => {
   console.log("socket connected", socket.id);
-
 
   // Extract gameId from auth data and join the room
   const gameId = socket.handshake.auth.gameId;
@@ -138,15 +149,24 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const success = await markChallengerReady(gameId, user.id);
+    const result = await markChallengerReady(gameId, user.id);
 
-    if (success) {
+    if (result.success && result.game) {
+      // Start the game timer
+      await gameTimerService.startTimer(
+        gameId,
+        result.game.timeLimit,
+        result.game.startedAt
+      );
+
       // Notify both players that game is now in progress
       io.to(gameId).emit("game_in_progress", {
         user: user,
+        startedAt: result.game.startedAt,
+        timeLimit: result.game.timeLimit
       });
 
-      console.log(`Challenger ${user.id} marked ready - game ${gameId} is now in progress`);
+      console.log(`Challenger ${user.id} marked ready - game ${gameId} is now in progress, timer started`);
     } else {
       console.log(`Failed to mark challenger ready for user ${user.id} in game ${gameId}`);
     }
@@ -181,13 +201,16 @@ io.on("connection", (socket) => {
     const forfeitResult = await forfeitGame(gameId, user.id, role);
 
     if (forfeitResult.success && forfeitResult.result) {
+      // Clear the game timer (game ended early via forfeit)
+      await gameTimerService.clearTimer(gameId);
+
       // Notify both players that game has finished
       io.to(gameId).emit("game_finished", {
         result: forfeitResult.result,
         gameStatus: "completed"
       });
 
-      console.log(`User ${user.id} (${role}) successfully forfeited game ${gameId}`);
+      console.log(`User ${user.id} (${role}) successfully forfeited game ${gameId}, timer cleared`);
     } else {
       console.log(`Failed to forfeit game for user ${user.id} (${role}) in game ${gameId}`);
     }
@@ -218,3 +241,27 @@ app.get("/", (req, res) => {
 httpServer.listen(PORT, () => {
   console.log("listening to port", PORT);
 });
+
+// Graceful shutdown
+const shutdown = async () => {
+  console.log('\nShutting down gracefully...');
+
+  // Close HTTP server
+  httpServer.close(() => {
+    console.log('HTTP server closed');
+  });
+
+  // Shutdown game timer service
+  await gameTimerService.shutdown();
+
+  // Close Redis connection
+  redisClient.disconnect();
+  console.log('Redis connection closed');
+
+  console.log('Shutdown complete');
+  process.exit(0);
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

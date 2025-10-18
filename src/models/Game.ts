@@ -71,6 +71,14 @@ const gameSchema = new Schema<IGameDocument>({
       required: false
     }
   },
+  startedAt: {
+    type: Date,
+    required: false
+  },
+  completedAt: {
+    type: Date,
+    required: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

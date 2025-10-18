@@ -36,6 +36,8 @@ export interface IGame {
   hostCode: string;
   challengerCode: string;
   result?: GameResult;
+  startedAt?: Date;
+  completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
