@@ -74,7 +74,7 @@ const gameSchema = new Schema<IGameDocument>({
     },
     winner: {
       type: String,
-      required: false
+      required: false // undefined for draws
     },
     message: {
       type: String,

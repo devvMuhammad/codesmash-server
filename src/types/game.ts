@@ -18,7 +18,7 @@ export enum GameResultReason {
 
 export interface GameResult {
   reason: GameResultReason;
-  winner: string; // userId of winner
+  winner?: string; // userId of winner (undefined for draws)
   message: string; // comprehensive result message
 }
 
