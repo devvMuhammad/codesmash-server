@@ -56,6 +56,16 @@ const gameSchema = new Schema<IGameDocument>({
     type: String,
     required: false
   },
+  hostTestsPassed: {
+    type: Number,
+    default: 0,
+    required: true
+  },
+  challengerTestsPassed: {
+    type: Number,
+    default: 0,
+    required: true
+  },
   result: {
     reason: {
       type: String,

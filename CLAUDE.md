@@ -113,6 +113,94 @@ GET /api/games/:gameId
 - `404 Not Found` - Game not found
 - `500 Internal Server Error` - Database/server error
 
+#### Get Live Battles
+```http
+GET /api/games/live
+```
+
+**Description**: Fetches ongoing battles (games with `status=IN_PROGRESS`), limited to 20 most recent.
+
+**Response** (200 OK):
+```typescript
+Array<{
+  _id: string
+  host: {
+    _id: string
+    name?: string
+    email?: string
+    image?: string
+  }
+  challenger: {
+    _id: string
+    name?: string
+    email?: string
+    image?: string
+  }
+  problem: {
+    _id: string
+    title: string
+    difficulty: "easy" | "medium" | "hard"
+  }
+  status: "in_progress"
+  timeLimit: number              // In seconds
+  difficulty: "easy" | "medium" | "hard"
+  startedAt?: string             // ISO date string
+  remainingSeconds: number       // Calculated remaining time
+  createdAt: string              // ISO date string
+  updatedAt: string              // ISO date string
+}>
+```
+
+**How It Works**:
+1. Queries database for games with `status=IN_PROGRESS`
+2. Populates `host`, `challenger`, and `problem` fields
+3. Sorts by `startedAt` descending (newest first)
+4. Limits to 20 results
+5. Calculates `remainingSeconds` for each game based on `timeLimit` and `startedAt`
+
+**Error Responses**:
+- `500 Internal Server Error` - Database/server error
+
+#### Get Open Challenges
+```http
+GET /api/games/open
+```
+
+**Description**: Fetches open challenges (games with `status=WAITING` and no challenger), limited to 20 most recent.
+
+**Response** (200 OK):
+```typescript
+Array<{
+  _id: string
+  host: {
+    _id: string
+    name?: string
+    email?: string
+    image?: string
+  }
+  problem?: {
+    _id: string
+    title: string
+    difficulty: "easy" | "medium" | "hard"
+  }
+  inviteCode: string
+  status: "waiting"
+  timeLimit: number              // In seconds
+  difficulty: "easy" | "medium" | "hard"
+  createdAt: string              // ISO date string
+  updatedAt: string              // ISO date string
+}>
+```
+
+**How It Works**:
+1. Queries database for games with `status=WAITING` and no `challenger`
+2. Populates `host` and `problem` fields
+3. Sorts by `createdAt` descending (newest first)
+4. Limits to 20 results
+
+**Error Responses**:
+- `500 Internal Server Error` - Database/server error
+
 ### User Endpoints
 
 #### Get User Challenges

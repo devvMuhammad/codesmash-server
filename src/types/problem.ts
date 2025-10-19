@@ -15,6 +15,7 @@ export interface IProblem {
     cpp: string;
   };
   correctOutput: string;
+  totalTestCases: number; // Calculated field, not stored in DB
   createdAt: Date;
   updatedAt: Date;
 }

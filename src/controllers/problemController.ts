@@ -13,6 +13,92 @@ import {
 } from '../types/problem';
 import mongoose from 'mongoose';
 import { LANGUAGE_IDS } from '../config/game';
+import { Game } from '../models/Game';
+import { getUserRoleInGame } from '../utils/gameHelpers';
+import { io } from '../../index';
+import { gameTimerService } from '../services/gameTimerQueue';
+import { GameStatus, GameResultReason } from '../types/game';
+
+/**
+ * Handle test progress update and game completion
+ * Internal helper function for submitCode
+ */
+const handleTestProgressUpdate = async (
+  gameId: string,
+  userId: string,
+  passedTests: number,
+  totalTests: number
+): Promise<void> => {
+  try {
+    // Securely get user role from database
+    const role = await getUserRoleInGame(gameId, userId);
+
+    if (!role || role === 'spectator') {
+      console.log(`User ${userId} is not a valid participant in game ${gameId}`);
+      return;
+    }
+
+    const game = await Game.findById(gameId);
+    if (!game) {
+      console.log(`Game ${gameId} not found`);
+      return;
+    }
+
+    const field = role === 'host' ? 'hostTestsPassed' : 'challengerTestsPassed';
+    const previousPassed = game[field];
+
+    // Only update if improved
+    if (passedTests <= previousPassed) {
+      console.log(`No improvement for ${role} in game ${gameId}: ${passedTests} <= ${previousPassed}`);
+      return;
+    }
+
+    // Update the test progress
+    game[field] = passedTests;
+    await game.save();
+
+    const allTestsPassed = passedTests === totalTests;
+    console.log(`User ${userId} (${role}) improved test progress in game ${gameId}: ${previousPassed} → ${passedTests}/${totalTests}`);
+
+    // If all tests passed, end the game
+    if (allTestsPassed) {
+      await gameTimerService.clearTimer(gameId);
+
+      const result = {
+        reason: GameResultReason.COMPLETED,
+        winner: userId,
+        message: `${role === 'host' ? 'Host' : 'Challenger'} solved the problem!`
+      };
+
+      game.status = GameStatus.COMPLETED;
+      game.result = result;
+      game.completedAt = new Date();
+      await game.save();
+
+      // Emit game finished to both players
+      io.to(gameId).emit('game_finished', {
+        result,
+        gameStatus: 'completed'
+      });
+
+      console.log(`Game ${gameId} completed - ${role} solved all tests`);
+    }
+
+    // Emit progress update (if improved or all passed)
+    io.to(gameId).emit('test_progress_update', {
+      role,
+      passedTests,
+      totalTests,
+      previousPassed,
+      allTestsPassed
+    });
+
+    console.log(`Test progress update emitted for game ${gameId}: ${role} passed ${passedTests}/${totalTests} tests`);
+  } catch (error) {
+    console.error('Error handling test progress update:', error);
+    // Don't throw - progress tracking is supplementary to code submission
+  }
+};
 
 /**
  * Submit code for a problem
@@ -174,6 +260,14 @@ export const submitCode = async (req: Request, res: Response): Promise<void> => 
       allTestsPassed,
       statusDescription
     };
+
+    // Handle test progress tracking if this is part of a game
+    await handleTestProgressUpdate(
+      req.body.gameId,
+      req.body.userId,
+      passedTests,
+      totalTests
+    );
 
     res.status(200).json(response);
 

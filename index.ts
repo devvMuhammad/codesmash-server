@@ -38,6 +38,9 @@ const io = new Server(httpServer, {
   }
 });
 
+// Export io for use in controllers
+export { io };
+
 // setup cors
 app.use(
   cors({
@@ -97,6 +100,7 @@ io.on("connection", (socket) => {
     });
   }
 
+  // this is a special event for the challenger to quit the game BEFORE THE GAME STARTS
   socket.on("challenger_quit", async () => {
     console.log("challenger_quit event received", socket.id);
 
