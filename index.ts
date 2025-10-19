@@ -49,7 +49,7 @@ app.use(
 app.use(express.json());
 
 // simple logger in middleware
-app.use((req, res, next) => {
+app.use((req, _, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
@@ -63,7 +63,7 @@ connectToDatabase()
     gameTimerService.initializeWorker(io);
 
     // Resume active game timers after server restart
-    // await gameTimerService.resumeActiveTimers(io);
+    await gameTimerService.resumeActiveTimers(io);
   })
   .catch(console.error);
 
