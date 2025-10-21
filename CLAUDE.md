@@ -433,20 +433,28 @@ server/
 ```typescript
 {
   _id: ObjectId                    // Auto-generated MongoDB ID
-  hostId: String (required)        # User ID who created the game
-  players: [String]                # Array of user IDs in game
-  spectators: [String]             # Array of user IDs watching
-  inviteCode: String (required, unique)     # 8-char invite code
-  spectatorCode: String (required, unique)  # 8-char spectator code
-  status: String (enum)            # waiting|in_progress|completed|cancelled
-  problemId: String (required)     # Reference to problem (currently mock)
-  createdAt: Date (auto)           # Creation timestamp
-  updatedAt: Date (auto)           # Last update timestamp
-  expiresAt: Date (required)       # When invite expires
-  timeLimit: Number (required)     # Game duration in seconds
-  difficulty: String (enum)        # easy|medium|hard
-  startedAt: Date (optional)       # When game began
-  completedAt: Date (optional)     # When game ended
+  host: ObjectId (required)        // Reference to user who created the game
+  challenger: ObjectId (optional)  // Reference to user who joined
+  inviteCode: String (required, unique)     // 8-char invite code
+  status: String (enum)            // waiting|ready_to_start|in_progress|completed|cancelled
+  problem: ObjectId (optional)     // Reference to problem
+  difficulty: String (enum)        // easy|medium|hard
+  timeLimit: Number (required)     // Game duration in seconds
+  hostJoined: Boolean (default: false)      // Whether host has joined
+  challengerJoined: Boolean (default: false)  // Whether challenger has joined
+  hostCode: String (optional)      // Host's code
+  challengerCode: String (optional)  // Challenger's code
+  hostTestsPassed: Number (default: 0)      // Number of test cases host passed
+  challengerTestsPassed: Number (default: 0)  // Number of test cases challenger passed
+  result: {                        // Game result (optional, set when game ends)
+    reason: String (enum)          // forfeit|time_up|completed
+    winner: String (optional)      // userId of winner (undefined for draws)
+    message: String                // Result description with test case details
+  }
+  startedAt: Date (optional)       // When game moved to IN_PROGRESS
+  completedAt: Date (optional)     // When game ended
+  createdAt: Date (auto)           // Creation timestamp
+  updatedAt: Date (auto)           // Last update timestamp
 }
 ```
 
@@ -593,7 +601,11 @@ class GameTimerService {
 
 4A. Time Expires (status: completed)
    ├─ Worker processes expired job
-   ├─ Update DB: status=completed, result.reason=TIME_UP
+   ├─ Determine winner based on test cases passed:
+   │  - hostTestsPassed > challengerTestsPassed → host wins
+   │  - challengerTestsPassed > hostTestsPassed → challenger wins
+   │  - Equal test cases passed → draw (winner = undefined)
+   ├─ Update DB: status=completed, result.reason=TIME_UP, winner (or undefined for draw)
    ├─ Emit 'game_time_expired' to clients
    └─ Remove job from queue
 
@@ -618,8 +630,8 @@ class GameTimerService {
   gameId: string
   result: {
     reason: "time_up"
-    winner: string
-    message: string
+    winner?: string  // userId of winner, undefined for draws
+    message: string  // Includes test case comparison details
   }
   completedAt: Date
   status: "completed"
