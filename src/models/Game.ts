@@ -9,14 +9,10 @@ const gameSchema = new Schema<IGameDocument>({
     type: String,
     required: true
   },
-  players: [{
+  challengerId: {
     type: String,
-    default: []
-  }],
-  spectators: [{
-    type: String,
-    default: []
-  }],
+    required: false
+  },
   inviteCode: {
     type: String,
     required: true,
