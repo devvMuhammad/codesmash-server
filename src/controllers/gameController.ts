@@ -129,7 +129,7 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
     if (!game) {
       res.status(404).json({
         success: false,
-        role: 'spectator',
+        role: undefined,
         message: 'Game not found'
       });
       return;
@@ -137,9 +137,18 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
 
     // if game is finished, return
     if (game.status === GameStatus.COMPLETED) {
+      let userRole = undefined;
+      if (game.host.toString() === userId) {
+        userRole = 'host';
+      } else if (game.challenger?.toString() === userId) {
+        userRole = 'challenger';
+      } else {
+        userRole = 'spectator';
+      }
+
       res.status(200).json({
         success: true,
-        role: 'spectator',
+        role: userRole,
         message: 'Game is finished'
       });
       return;
