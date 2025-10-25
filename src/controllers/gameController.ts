@@ -1,27 +1,30 @@
 import { type Request, type Response } from 'express';
 import { Game } from '../models/Game';
+import { User } from '../models/User'; // Import User model for population
 import { generateUniqueCode, generateInviteLink } from '../utils/linkGenerator';
 import type { CreateGameRequest, CreateGameResponse, IGame, JoinGameRequest, JoinGameResponse } from '../types/game';
 import mongoose from 'mongoose';
+import { mockProblem } from '../mock/problem';
 
 export const createGame = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { hostId, expiresAt, timeLimit, difficulty }: CreateGameRequest = req.body;
+    const { host, timeLimit, difficulty }: CreateGameRequest = req.body;
 
     const inviteCode = generateUniqueCode(8);
-    const spectatorCode = generateUniqueCode(8);
 
     // find a problem for the desired difficulty but for now dummy
     const problemId = generateUniqueCode(8);
 
     const newGame = new Game({
-      hostId,
+      host: new mongoose.Types.ObjectId(host),
       inviteCode,
-      spectatorCode,
       problemId,
-      expiresAt,
       timeLimit,
-      difficulty
+      difficulty,
+      hostJoined: false,
+      challengerJoined: false,
+      hostCode: "",
+      challengerCode: ""
     })
 
     const savedGame = await newGame.save();
@@ -55,36 +58,26 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const game = await Game.findById(gameId).lean();
+    const game = await Game.findById(gameId)
+      .populate('host', 'name email image id')
+      .populate('challenger', 'name email image id')
+      .lean();
+
+    console.log("ID SHYT", game?.id, game?.host)
+    console.log("GAME SHYT HAHA", game)
+
 
     if (!game) {
       res.status(404).json({ error: 'Game not found' });
       return;
     }
 
-    // TODO: Populate problem data when Problem model is implemented
-    // For now, we'll return the game without problem details
     const gameData = {
       ...game,
       _id: game._id.toString(),
-      // Add mock problem data for now - replace when Problem model exists
-      problem: game.problemId ? {
-        id: game.problemId,
-        title: "Two Sum", // Mock data
-        description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-        difficulty: game.difficulty,
-        examples: [{
-          input: "nums = [2,7,11,15], target = 9",
-          output: "[0,1]",
-          explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]."
-        }],
-        constraints: [
-          "2 <= nums.length <= 10^4",
-          "-10^9 <= nums[i] <= 10^9",
-          "-10^9 <= target <= 10^9"
-        ],
-        functionSignature: "function twoSum(nums, target) {\n  // Your solution here\n}"
-      } : undefined
+      hostId: typeof game.host === 'object' ? game.host._id?.toString() : game.host,
+      challengerId: typeof game.challenger === 'object' ? game.challenger._id?.toString() : game.challenger,
+      problem: mockProblem
     };
 
     res.status(200).json(gameData);
@@ -109,6 +102,7 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
 
     const game = await Game.findById(gameId);
 
+
     if (!game) {
       res.status(404).json({
         success: false,
@@ -119,7 +113,11 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Check if user is the host
-    if (game.hostId === userId) {
+    if (game.host.toString() === userId) {
+
+      game.hostJoined = true;
+      await game.save();
+
       const response: JoinGameResponse = {
         success: true,
         role: 'host',
@@ -132,7 +130,25 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
     // Check if invite code is valid
     if (game.inviteCode === inviteCode) {
       // Check if there's already a challenger
-      if (game.challengerId) {
+      if (game.challenger) {
+
+        // check if the existing challenger is the same as the current user
+        if (game.challenger.toString() === userId) {
+          // Update challenger joined status if not already set
+          if (!game.challengerJoined) {
+            game.challengerJoined = true;
+            await game.save();
+          }
+
+          const response: JoinGameResponse = {
+            success: true,
+            role: 'challenger',
+            message: 'You are already a challenger in this game.'
+          };
+          res.status(200).json(response);
+          return;
+        }
+
         const response: JoinGameResponse = {
           success: false,
           role: 'spectator',
@@ -143,7 +159,7 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
       }
 
       // Join as challenger
-      game.challengerId = userId;
+      game.challengerJoined = true;
       await game.save();
 
       const response: JoinGameResponse = {

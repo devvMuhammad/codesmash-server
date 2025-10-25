@@ -7,6 +7,9 @@ import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { connectToDatabase } from "./src/config/database";
 import apiRoutes from "./src/routes/apiRoutes";
+// Import models to register them with Mongoose
+import "./src/models/User";
+import "./src/models/Game";
 
 dotenv.config();
 

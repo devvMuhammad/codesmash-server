@@ -5,21 +5,17 @@ import { DifficultyType, GameStatus } from '../types/game';
 export interface IGameDocument extends Omit<IGame, '_id'>, Document { }
 
 const gameSchema = new Schema<IGameDocument>({
-  hostId: {
-    type: String,
+  host: {
+    type: Schema.Types.ObjectId,
+    ref: 'user',
     required: true
   },
-  challengerId: {
-    type: String,
+  challenger: {
+    type: Schema.Types.ObjectId,
+    ref: 'user',
     required: false
   },
   inviteCode: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
-  },
-  spectatorCode: {
     type: String,
     required: true,
     unique: true,
@@ -31,25 +27,37 @@ const gameSchema = new Schema<IGameDocument>({
     default: GameStatus.WAITING
   },
   problemId: {
-    type: "string",
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  expiresAt: {
-    type: Date,
-    required: true
-  },
-  timeLimit: {
-    type: Number,
+    type: String,
     required: true
   },
   difficulty: {
     type: String,
     enum: Object.values(DifficultyType),
     required: true
+  },
+  timeLimit: {
+    type: Number,
+    required: true
+  },
+  hostJoined: {
+    type: Boolean,
+    default: false
+  },
+  challengerJoined: {
+    type: Boolean,
+    default: false
+  },
+  hostCode: {
+    type: String,
+    required: false
+  },
+  challengerCode: {
+    type: String,
+    required: false
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
   updatedAt: {
     type: Date,
