@@ -6,6 +6,7 @@ export interface IUser {
   email: string;
   emailVerified?: boolean;
   image?: string;
+  aura?: number;
   createdAt: Date;
   updatedAt: Date;
 }

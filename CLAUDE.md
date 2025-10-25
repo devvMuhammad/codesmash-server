@@ -203,6 +203,33 @@ Array<{
 
 ### User Endpoints
 
+#### Get Leaderboard
+```http
+GET /api/users/leaderboard
+```
+
+**Description**: Fetches top 100 players sorted by aura points (descending).
+
+**Response** (200 OK):
+```typescript
+Array<{
+  _id: string
+  name?: string
+  email?: string
+  image?: string
+  aura: number              // Aura points (default: 1000)
+}>
+```
+
+**How It Works**:
+1. Queries all users from database
+2. Sorts by `aura` descending (highest first)
+3. Limits to 100 results
+4. Returns user data with aura field
+
+**Error Responses**:
+- `500 Internal Server Error` - Database/server error
+
 #### Get User Challenges
 ```http
 GET /api/users/:userId/challenges
@@ -504,6 +531,24 @@ server/
 
 **Indexes**:
 - `title` - Index for problem lookups
+
+### User Collection
+```typescript
+{
+  _id: ObjectId                    // Auto-generated MongoDB ID
+  name: String (optional)          // User display name
+  email: String (required, unique) // User email address
+  emailVerified: Boolean (default: false) // Email verification status
+  image: String (optional)         // Profile image URL
+  aura: Number (default: 1000)     // Aura points for leaderboard ranking
+  createdAt: Date (auto)           // Creation timestamp
+  updatedAt: Date (auto)           // Last update timestamp
+}
+```
+
+**Indexes**:
+- `email` - Unique index for authentication lookups
+- `aura` - Index for leaderboard queries (sorted descending)
 
 ## Environment Configuration
 
