@@ -115,11 +115,20 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
   try {
     const { gameId, userId, inviteCode }: JoinGameRequest = req.body;
 
-    if (!gameId || !userId) {
+    if (!gameId) {
       res.status(400).json({
         success: false,
         role: 'spectator',
         message: 'Missing required fields'
+      });
+      return;
+    }
+
+    if (!userId) {
+      res.status(400).json({
+        success: false,
+        role: 'spectator',
+        message: 'You have joined as a spectator'
       });
       return;
     }
