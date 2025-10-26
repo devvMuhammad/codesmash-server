@@ -1,9 +1,12 @@
 
 export interface IUser {
-  _id?: string;
+  _id: string;
   name?: string;
-  email?: string;
+  email: string;
+  emailVerified?: boolean;
   image?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IGame {
