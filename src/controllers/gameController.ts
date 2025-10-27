@@ -63,10 +63,6 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
       .populate('challenger', 'name email image id')
       .lean();
 
-    console.log("ID SHYT", game?.id, game?.host)
-    console.log("GAME SHYT HAHA", game)
-
-
     if (!game) {
       res.status(404).json({ error: 'Game not found' });
       return;
@@ -91,7 +87,7 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
   try {
     const { gameId, userId, inviteCode }: JoinGameRequest = req.body;
 
-    if (!gameId || !userId || !inviteCode) {
+    if (!gameId || !userId) {
       res.status(400).json({
         success: false,
         role: 'spectator',
@@ -112,11 +108,14 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    console.log("game.host.toString()", game.host.toString(), userId)
     // Check if user is the host
     if (game.host.toString() === userId) {
 
+      console.log("join host game")
       game.hostJoined = true;
       await game.save();
+      console.log("higaya ahiahuhs")
 
       const response: JoinGameResponse = {
         success: true,
@@ -124,6 +123,16 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
         message: 'Host has joined the game',
       };
       res.status(200).json(response);
+      return;
+    }
+
+    // check if invite code is present
+    if (!inviteCode) {
+      res.status(400).json({
+        success: false,
+        role: 'spectator',
+        message: 'Invite code is required'
+      });
       return;
     }
 
@@ -160,6 +169,8 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
 
       // Join as challenger
       game.challengerJoined = true;
+      // save id in the challenge
+      game.challenger = userId;
       await game.save();
 
       const response: JoinGameResponse = {

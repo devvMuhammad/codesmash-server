@@ -61,13 +61,27 @@ app.use("/api", apiRoutes);
 io.on("connection", (socket) => {
   console.log("socket connected", socket.id);
 
+  console.log('auth data', socket.handshake.auth)
+
   // Extract gameId from auth data and join the room
-  const gameId = socket.handshake.auth?.gameId;
+  const gameId = socket.handshake.auth.gameId;
+  const role = socket.handshake.auth.role;
+  const user = socket.handshake.auth.user;
+
   if (gameId) {
     socket.join(gameId);
     console.log(`socket ${socket.id} joined room ${gameId}`);
   } else {
     console.log(`socket ${socket.id} connected without gameId`);
+  }
+
+  // don't send player notification for "spectator"
+  if (role !== "spectator") {
+    console.log(`emitting event player_joined to ${gameId}`)
+    socket.to(gameId).emit("player_joined", {
+      role: role,
+      user: user,
+    });
   }
 
   socket.on("disconnect", () => {
