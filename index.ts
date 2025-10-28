@@ -7,6 +7,7 @@ import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { connectToDatabase } from "./src/config/database";
 import apiRoutes from "./src/routes/apiRoutes";
+import { leaveGame } from "./src/controllers/gameController";
 // Import models to register them with Mongoose
 import "./src/models/User";
 import "./src/models/Game";
@@ -61,7 +62,6 @@ app.use("/api", apiRoutes);
 io.on("connection", (socket) => {
   console.log("socket connected", socket.id);
 
-  console.log('auth data', socket.handshake.auth)
 
   // Extract gameId from auth data and join the room
   const gameId = socket.handshake.auth.gameId;
@@ -84,8 +84,19 @@ io.on("connection", (socket) => {
     });
   }
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log("socket disconnected", socket.id);
+
+
+    await leaveGame(gameId, user.id, role);
+
+    socket.to(gameId).emit("player_disconnected", {
+      role: role,
+      user: user,
+    });
+
+    socket.leave(gameId);
+    console.log(`socket ${socket.id} left room ${gameId}`);
   })
 });
 
