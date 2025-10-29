@@ -7,7 +7,7 @@ import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { connectToDatabase } from "./src/config/database";
 import apiRoutes from "./src/routes/apiRoutes";
-import { leaveGame } from "./src/controllers/gameController";
+import { leaveGame, handleChallengerQuit } from "./src/controllers/gameController";
 // Import models to register them with Mongoose
 import "./src/models/User";
 import "./src/models/Game";
@@ -83,6 +83,28 @@ io.on("connection", (socket) => {
       user: user,
     });
   }
+
+  socket.on("challenger_quit", async () => {
+    console.log("challenger_quit event received", socket.id);
+
+    if (role !== "challenger") {
+      console.log(`User ${user.id} with role ${role} tried to quit as challenger - ignoring`);
+      return;
+    }
+
+    const success = await handleChallengerQuit(gameId, user.id);
+
+    if (success) {
+      // Notify the host that challenger has quit
+      socket.to(gameId).emit("challenger_quit", {
+        user: user,
+      });
+
+      console.log(`Challenger ${user.id} successfully quit game ${gameId}`);
+    } else {
+      console.log(`Failed to process challenger quit for user ${user.id} in game ${gameId}`);
+    }
+  });
 
   socket.on("disconnect", async () => {
     console.log("socket disconnected", socket.id);
