@@ -3,6 +3,7 @@ import type { Server } from 'socket.io';
 import { Game } from '../models/Game';
 import { GameStatus, GameResultReason } from '../types/game';
 import { redisConnection } from '../config/redis';
+import { auraService } from './auraService';
 
 
 const QUEUE_NAME = 'game-timers';
@@ -208,6 +209,17 @@ class GameTimerService {
         winner = undefined;
         message = `Time's up! It's a draw - both players passed ${hostTestsPassed} test cases.`;
       }
+
+      // Award AURA based on time expiration result
+      const hostId = currentGame.host.toString();
+      const challengerId = currentGame.challenger?.toString();
+
+      if (winner && challengerId) {
+        // There's a winner - award winner and penalize loser
+        const loserId = winner === hostId ? challengerId : hostId;
+        await auraService.handleMatchCompletion(winner, loserId, 'Time expired');
+      }
+      // If draw (winner === undefined), no aura changes (DRAW = 0 points)
 
       // Update game in database
       const game = await Game.findByIdAndUpdate(

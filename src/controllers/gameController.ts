@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { codeStorage } from '../services/codeStorage';
 import { Problem } from '../models/Problem';
 import type { IProblem } from '../types/problem';
+import { auraService } from '../services/auraService';
 
 export const createGame = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -464,6 +465,11 @@ export const forfeitGame = async (gameId: string, userId: string, role: string):
     game.result = gameResult;
     game.completedAt = new Date();
     await game.save();
+
+    // Award AURA for forfeit (penalty for forfeiter, reward for winner)
+    if (winnerId) {
+      await auraService.handleForfeit(userId, winnerId);
+    }
 
     console.log(`User ${userId} (${role}) forfeited game ${gameId} - winner: ${winnerId}`);
     return { success: true, result: gameResult };
