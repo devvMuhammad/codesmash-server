@@ -2,13 +2,14 @@ import type { IProblem } from "./problem";
 
 export interface IUser {
   _id: string;
-  name?: string;
+  name: string;
   email: string;
   emailVerified?: boolean;
   image?: string;
-  aura?: number;
+  aura: number;
   createdAt: Date;
   updatedAt: Date;
+  username: string;
 }
 
 export enum GameResultReason {
