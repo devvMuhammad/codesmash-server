@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { createAuthMiddleware } from "better-auth/api";
 import { MongoClient } from "mongodb";
 
 const mongodbUri = process.env.MONGODB_URI;
@@ -18,7 +17,7 @@ if (!clientBaseUrl) {
 
 export const auth = betterAuth({
   database: mongodbAdapter(db),
-  "databaseHooks": {
+  databaseHooks: {
     user: {
       create: {
         before: async (user) => {
@@ -29,9 +28,9 @@ export const auth = betterAuth({
               username: user.email.split("@")[0],
             },
           };
-        }
-      }
-    }
+        },
+      },
+    },
   },
   user: {
     additionalFields: {
@@ -42,8 +41,8 @@ export const auth = betterAuth({
       aura: {
         type: "number",
         defaultValue: 0,
-      }
-    }
+      },
+    },
   },
   emailAndPassword: {
     enabled: true,
