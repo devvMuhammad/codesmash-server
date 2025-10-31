@@ -2,7 +2,7 @@ import { type Request, type Response } from 'express';
 import { Game } from '../models/Game';
 import { User } from '../models/User'; // Import User model for population
 import { generateUniqueCode, generateInviteLink } from '../utils/linkGenerator';
-import type { CreateGameRequest, CreateGameResponse, IGame, JoinGameRequest, JoinGameResponse } from '../types/game';
+import { type CreateGameRequest, type CreateGameResponse, type IGame, type JoinGameRequest, type JoinGameResponse, GameStatus } from '../types/game';
 import mongoose from 'mongoose';
 import { mockProblem } from '../mock/problem';
 
@@ -271,6 +271,88 @@ export const handleChallengerQuit = async (gameId: string, userId: string): Prom
 
   } catch (error) {
     console.error('Error in handleChallengerQuit:', error);
+    return false;
+  }
+};
+
+export const startBattle = async (gameId: string, userId: string): Promise<boolean> => {
+  try {
+    if (!gameId || !userId) {
+      console.error('Missing gameId or userId for start battle');
+      return false;
+    }
+
+    const game = await Game.findById(gameId);
+    if (!game) {
+      console.error(`Game ${gameId} not found when host ${userId} tried to start battle`);
+      return false;
+    }
+
+    // Verify user is the host
+    if (game.host.toString() !== userId) {
+      console.error(`User ${userId} is not the host for game ${gameId}`);
+      return false;
+    }
+
+    // Verify game is in waiting state
+    if (game.status !== GameStatus.WAITING) {
+      console.error(`Game ${gameId} is not in waiting state (current: ${game.status})`);
+      return false;
+    }
+
+    // Verify both players have joined
+    if (!game.hostJoined || !game.challengerJoined) {
+      console.error(`Both players must be joined to start battle. Host: ${game.hostJoined}, Challenger: ${game.challengerJoined}`);
+      return false;
+    }
+
+    // Update game status to ready_to_start
+    game.status = GameStatus.READY_TO_START;
+    await game.save();
+
+    console.log(`Host ${userId} started battle for game ${gameId} - status updated to ready_to_start`);
+    return true;
+
+  } catch (error) {
+    console.error('Error in startBattle:', error);
+    return false;
+  }
+};
+
+export const markChallengerReady = async (gameId: string, userId: string): Promise<boolean> => {
+  try {
+    if (!gameId || !userId) {
+      console.error('Missing gameId or userId for challenger ready');
+      return false;
+    }
+
+    const game = await Game.findById(gameId);
+    if (!game) {
+      console.error(`Game ${gameId} not found when challenger ${userId} tried to mark ready`);
+      return false;
+    }
+
+    // Verify user is the challenger
+    if (!game.challenger || game.challenger.toString() !== userId) {
+      console.error(`User ${userId} is not the challenger for game ${gameId}`);
+      return false;
+    }
+
+    // Verify game is in ready_to_start state
+    if (game.status !== GameStatus.READY_TO_START) {
+      console.error(`Game ${gameId} is not in ready_to_start state (current: ${game.status})`);
+      return false;
+    }
+
+    // Update game status to in_progress
+    game.status = GameStatus.IN_PROGRESS;
+    await game.save();
+
+    console.log(`Challenger ${userId} marked ready for game ${gameId} - status updated to in_progress`);
+    return true;
+
+  } catch (error) {
+    console.error('Error in markChallengerReady:', error);
     return false;
   }
 };

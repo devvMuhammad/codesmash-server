@@ -7,7 +7,7 @@ import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { connectToDatabase } from "./src/config/database";
 import apiRoutes from "./src/routes/apiRoutes";
-import { leaveGame, handleChallengerQuit } from "./src/controllers/gameController";
+import { leaveGame, handleChallengerQuit, startBattle, markChallengerReady } from "./src/controllers/gameController";
 // Import models to register them with Mongoose
 import "./src/models/User";
 import "./src/models/Game";
@@ -103,6 +103,50 @@ io.on("connection", (socket) => {
       console.log(`Challenger ${user.id} successfully quit game ${gameId}`);
     } else {
       console.log(`Failed to process challenger quit for user ${user.id} in game ${gameId}`);
+    }
+  });
+
+  socket.on("start_battle", async () => {
+    console.log("start_battle event received", socket.id);
+
+    if (role !== "host") {
+      console.log(`User ${user.id} with role ${role} tried to start battle - ignoring`);
+      return;
+    }
+
+    const success = await startBattle(gameId, user.id);
+
+    if (success) {
+      // Notify the challenger that host has started the battle
+      socket.to(gameId).emit("battle_started", {
+        user: user,
+      });
+
+      console.log(`Host ${user.id} successfully started battle for game ${gameId}`);
+    } else {
+      console.log(`Failed to start battle for user ${user.id} in game ${gameId}`);
+    }
+  });
+
+  socket.on("challenger_ready", async () => {
+    console.log("challenger_ready event received", socket.id);
+
+    if (role !== "challenger") {
+      console.log(`User ${user.id} with role ${role} tried to mark ready - ignoring`);
+      return;
+    }
+
+    const success = await markChallengerReady(gameId, user.id);
+
+    if (success) {
+      // Notify both players that game is now in progress
+      io.to(gameId).emit("game_in_progress", {
+        user: user,
+      });
+
+      console.log(`Challenger ${user.id} marked ready - game ${gameId} is now in progress`);
+    } else {
+      console.log(`Failed to mark challenger ready for user ${user.id} in game ${gameId}`);
     }
   });
 
