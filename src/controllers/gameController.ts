@@ -5,6 +5,7 @@ import { generateUniqueCode, generateInviteLink } from '../utils/linkGenerator';
 import { type CreateGameRequest, type CreateGameResponse, type IGame, type JoinGameRequest, type JoinGameResponse, GameStatus } from '../types/game';
 import mongoose from 'mongoose';
 import { mockProblem } from '../mock/problem';
+import { codeStorage } from '../services/codeStorage';
 
 export const createGame = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -68,11 +69,20 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    // Get codes from in-memory storage with fallback to database
+    const memoryCode = codeStorage.getGameCodes(gameId);
+    const codes = memoryCode || {
+      hostCode: game.hostCode || mockProblem.functionSignature,
+      challengerCode: game.challengerCode || mockProblem.functionSignature
+    };
+
     const gameData = {
       ...game,
       _id: game._id.toString(),
       hostId: typeof game.host === 'object' ? game.host._id?.toString() : game.host,
       challengerId: typeof game.challenger === 'object' ? game.challenger._id?.toString() : game.challenger,
+      hostCode: codes.hostCode,
+      challengerCode: codes.challengerCode,
       problem: mockProblem
     };
 
