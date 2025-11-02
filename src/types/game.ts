@@ -9,6 +9,12 @@ export interface IUser {
   updatedAt: Date;
 }
 
+export interface GameResult {
+  reason: 'forfeit' | 'time_up' | 'completed';
+  winner: string; // userId of winner
+  message: string; // comprehensive result message
+}
+
 export interface IGame {
   _id?: string;
   host: string | IUser;
@@ -22,6 +28,7 @@ export interface IGame {
   challengerJoined: boolean;
   hostCode: string;
   challengerCode: string;
+  result?: GameResult;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -55,6 +55,22 @@ const gameSchema = new Schema<IGameDocument>({
     type: String,
     required: false
   },
+  result: {
+    reason: {
+      type: String,
+      enum: ['forfeit', 'time_up', 'completed'],
+      required: false
+    },
+    winner: {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+      required: false
+    },
+    message: {
+      type: String,
+      required: false
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now

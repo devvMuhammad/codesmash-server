@@ -2,7 +2,7 @@ import { type Request, type Response } from 'express';
 import { Game } from '../models/Game';
 import { User } from '../models/User'; // Import User model for population
 import { generateUniqueCode, generateInviteLink } from '../utils/linkGenerator';
-import { type CreateGameRequest, type CreateGameResponse, type IGame, type JoinGameRequest, type JoinGameResponse, GameStatus } from '../types/game';
+import { type CreateGameRequest, type CreateGameResponse, type IGame, type JoinGameRequest, type JoinGameResponse, GameStatus, type GameResult } from '../types/game';
 import mongoose from 'mongoose';
 import { mockProblem } from '../mock/problem';
 import { codeStorage } from '../services/codeStorage';
@@ -108,12 +108,21 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
 
     const game = await Game.findById(gameId);
 
-
     if (!game) {
       res.status(404).json({
         success: false,
         role: 'spectator',
         message: 'Game not found'
+      });
+      return;
+    }
+
+    // if game is finished, return
+    if (game.status === GameStatus.COMPLETED) {
+      res.status(200).json({
+        success: true,
+        role: 'spectator',
+        message: 'Game is finished'
       });
       return;
     }
@@ -364,6 +373,66 @@ export const markChallengerReady = async (gameId: string, userId: string): Promi
   } catch (error) {
     console.error('Error in markChallengerReady:', error);
     return false;
+  }
+};
+
+export const forfeitGame = async (gameId: string, userId: string, role: string): Promise<{ success: boolean; result?: GameResult }> => {
+  try {
+    if (!gameId || !userId || !role) {
+      console.error('Missing gameId, userId, or role for forfeit game');
+      return { success: false };
+    }
+
+    const game = await Game.findById(gameId);
+    if (!game) {
+      console.error(`Game ${gameId} not found when user ${userId} tried to forfeit`);
+      return { success: false };
+    }
+
+    // Verify game is in progress
+    if (game.status !== GameStatus.IN_PROGRESS) {
+      console.error(`Game ${gameId} is not in progress (current: ${game.status}) - cannot forfeit`);
+      return { success: false };
+    }
+
+    // Verify user is either host or challenger
+    const isHost = game.host.toString() === userId;
+    const isChallenger = game.challenger?.toString() === userId;
+
+    if (!isHost && !isChallenger) {
+      console.error(`User ${userId} is not a participant in game ${gameId}`);
+      return { success: false };
+    }
+
+    // Verify role matches user position
+    if ((role === 'host' && !isHost) || (role === 'challenger' && !isChallenger)) {
+      console.error(`User ${userId} role mismatch - claimed ${role} but is ${isHost ? 'host' : 'challenger'}`);
+      return { success: false };
+    }
+
+    // Determine winner (the player who didn't forfeit)
+    const winnerId = isHost ? game.challenger?.toString() : game.host.toString();
+    const forfeiterName = role === 'host' ? 'Host' : 'Challenger';
+    const winnerName = role === 'host' ? 'Challenger' : 'Host';
+
+    // Create result object
+    const gameResult: GameResult = {
+      reason: 'forfeit',
+      winner: winnerId || '',
+      message: `${forfeiterName} forfeited the game. ${winnerName} wins by forfeit!`
+    };
+
+    // Update game status and result
+    game.status = GameStatus.COMPLETED;
+    game.result = gameResult;
+    await game.save();
+
+    console.log(`User ${userId} (${role}) forfeited game ${gameId} - winner: ${winnerId}`);
+    return { success: true, result: gameResult };
+
+  } catch (error) {
+    console.error('Error in forfeitGame:', error);
+    return { success: false };
   }
 };
 
