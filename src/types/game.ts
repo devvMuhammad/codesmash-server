@@ -9,8 +9,14 @@ export interface IUser {
   updatedAt: Date;
 }
 
+export enum GameResultReason {
+  FORFEIT = 'forfeit',
+  TIME_UP = 'time_up',
+  COMPLETED = 'completed'
+}
+
 export interface GameResult {
-  reason: 'forfeit' | 'time_up' | 'completed';
+  reason: GameResultReason;
   winner: string; // userId of winner
   message: string; // comprehensive result message
 }

@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import type { IGame } from '../types/game';
-import { DifficultyType, GameStatus } from '../types/game';
+import { DifficultyType, GameStatus, GameResultReason } from '../types/game';
 
 export interface IGameDocument extends Omit<IGame, '_id'>, Document { }
 
@@ -58,12 +58,11 @@ const gameSchema = new Schema<IGameDocument>({
   result: {
     reason: {
       type: String,
-      enum: ['forfeit', 'time_up', 'completed'],
+      enum: Object.values(GameResultReason),
       required: false
     },
     winner: {
-      type: Schema.Types.ObjectId,
-      ref: 'user',
+      type: String,
       required: false
     },
     message: {
