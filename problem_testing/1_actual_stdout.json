@@ -1,0 +1,88 @@
+[
+  {
+    "testCase": 1,
+    "description": "Basic case: [2,7,11,15], target 9",
+    "input": {
+      "nums": [
+        2,
+        7,
+        11,
+        15
+      ],
+      "target": 9
+    },
+    "expected": [
+      0,
+      1
+    ],
+    "actual": [
+      0,
+      1
+    ],
+    "status": "PASS"
+  },
+  {
+    "testCase": 2,
+    "description": "Case: [3,2,4], target 6",
+    "input": {
+      "nums": [
+        3,
+        2,
+        4
+      ],
+      "target": 6
+    },
+    "expected": [
+      1,
+      2
+    ],
+    "actual": [
+      1,
+      2
+    ],
+    "status": "PASS"
+  },
+  {
+    "testCase": 3,
+    "description": "Duplicate numbers: [3,3], target 6",
+    "input": {
+      "nums": [
+        3,
+        3
+      ],
+      "target": 6
+    },
+    "expected": [
+      0,
+      1
+    ],
+    "actual": [
+      0,
+      1
+    ],
+    "status": "PASS"
+  },
+  {
+    "testCase": 4,
+    "description": "Case: [1,2,3,4,5], target 9",
+    "input": {
+      "nums": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "target": 9
+    },
+    "expected": [
+      3,
+      4
+    ],
+    "actual": [
+      3,
+      4
+    ],
+    "status": "PASS"
+  }
+]

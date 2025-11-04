@@ -1,0 +1,13 @@
+{
+  "stdout": "=== TEST_RESULTS_START ===\n[\n  {\n    \"testCase\": 1,\n    \"description\": \"Basic case: [2,7,11,15], target 9\",\n    \"input\": {\n      \"nums\": [\n        2,\n        7,\n        11,\n        15\n      ],\n      \"target\": 9\n    },\n    \"expected\": [\n      0,\n      1\n    ],\n    \"actual\": [\n      0,\n      1\n    ],\n    \"status\": \"PASS\"\n  },\n  {\n    \"testCase\": 2,\n    \"description\": \"Case: [3,2,4], target 6\",\n    \"input\": {\n      \"nums\": [\n        3,\n        2,\n        4\n      ],\n      \"target\": 6\n    },\n    \"expected\": [\n      1,\n      2\n    ],\n    \"actual\": [\n      1,\n      2\n    ],\n    \"status\": \"PASS\"\n  },\n  {\n    \"testCase\": 3,\n    \"description\": \"Duplicate numbers: [3,3], target 6\",\n    \"input\": {\n      \"nums\": [\n        3,\n        3\n      ],\n      \"target\": 6\n    },\n    \"expected\": [\n      0,\n      1\n    ],\n    \"actual\": [\n      0,\n      1\n    ],\n    \"status\": \"PASS\"\n  },\n  {\n    \"testCase\": 4,\n    \"description\": \"Case: [1,2,3,4,5], target 9\",\n    \"input\": {\n      \"nums\": [\n        1,\n        2,\n        3,\n        4,\n        5\n      ],\n      \"target\": 9\n    },\n    \"expected\": [\n      3,\n      4\n    ],\n    \"actual\": [\n      3,\n      4\n    ],\n    \"status\": \"PASS\"\n  }\n]\n=== TEST_RESULTS_END ===\n",
+  "time": "0.024",
+  "memory": 8040,
+  "stderr": null,
+  "token": "517fc432-6c9d-427e-9229-ffd6a05b09aa",
+  "compile_output": null,
+  "message": null,
+  "status": {
+    "id": 3,
+    "description": "Accepted"
+  }
+}

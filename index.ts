@@ -119,7 +119,7 @@ io.on("connection", (socket) => {
 
     if (success) {
       // Notify the challenger that host has started the battle
-      socket.to(gameId).emit("battle_started", {
+      io.to(gameId).emit("battle_started", {
         user: user,
       });
 
