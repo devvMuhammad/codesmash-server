@@ -1,3 +1,4 @@
+import type { IProblem } from "./problem";
 
 export interface IUser {
   _id: string;
@@ -28,7 +29,7 @@ export interface IGame {
   inviteCode: string;
   status: GameStatus;
   difficulty: DifficultyType;
-  problemId: string;
+  problem: IProblem;
   timeLimit: number;
   hostJoined: boolean;
   challengerJoined: boolean;

@@ -1,11 +1,11 @@
 import { type Request, type Response } from 'express';
 import { Game } from '../models/Game';
-import { User } from '../models/User'; // Import User model for population
 import { generateUniqueCode, generateInviteLink } from '../utils/linkGenerator';
-import { type CreateGameRequest, type CreateGameResponse, type IGame, type JoinGameRequest, type JoinGameResponse, GameStatus, type GameResult, GameResultReason } from '../types/game';
+import { type CreateGameRequest, type CreateGameResponse, type JoinGameRequest, type JoinGameResponse, GameStatus, type GameResult, GameResultReason } from '../types/game';
 import mongoose from 'mongoose';
-import { mockProblem } from '../mock/problem';
 import { codeStorage } from '../services/codeStorage';
+import { Problem } from '../models/Problem';
+import type { IProblem } from '../types/problem';
 
 export const createGame = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -14,12 +14,13 @@ export const createGame = async (req: Request, res: Response): Promise<void> => 
     const inviteCode = generateUniqueCode(8);
 
     // find a problem for the desired difficulty but for now dummy
-    const problemId = generateUniqueCode(8);
+    const problemIds = await Problem.find({}, { _id: 1 })
+    const problemId = problemIds[Math.floor(Math.random() * problemIds.length)]!._id as string;
 
     const newGame = new Game({
       host: new mongoose.Types.ObjectId(host),
       inviteCode,
-      problemId,
+      problem: new mongoose.Types.ObjectId(problemId),
       timeLimit,
       difficulty,
       hostJoined: false,
@@ -62,6 +63,7 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
     const game = await Game.findById(gameId)
       .populate('host', 'name email image id')
       .populate('challenger', 'name email image id')
+      .populate('problem')
       .lean();
 
     if (!game) {
@@ -71,9 +73,10 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
 
     // Get codes from in-memory storage with fallback to database
     const memoryCode = codeStorage.getGameCodes(gameId);
+    const problem = game.problem as IProblem
     const codes = memoryCode || {
-      hostCode: game.hostCode || mockProblem.functionSignature,
-      challengerCode: game.challengerCode || mockProblem.functionSignature
+      hostCode: game.hostCode || problem.initialCodes.javascript,
+      challengerCode: game.challengerCode || problem.initialCodes.javascript
     };
 
     const gameData = {
@@ -83,7 +86,7 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
       challengerId: typeof game.challenger === 'object' ? game.challenger._id?.toString() : game.challenger,
       hostCode: codes.hostCode,
       challengerCode: codes.challengerCode,
-      problem: mockProblem
+      problem,
     };
 
     res.status(200).json(gameData);

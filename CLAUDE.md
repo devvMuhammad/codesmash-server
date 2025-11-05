@@ -146,6 +146,71 @@ Array<{
 - `400 Bad Request` - Missing userId
 - `500 Internal Server Error` - Database/server error
 
+### Problem Endpoints
+
+#### Submit Code for Problem
+```http
+POST /api/problems/:problemId/submit
+Content-Type: application/json
+```
+
+**Parameters**:
+- `problemId` - MongoDB ObjectId string
+
+**Request Body**:
+```typescript
+{
+  code: string                    // User's submitted code
+  language: "javascript" | "python" | "java" | "cpp"
+  userId: string                  // User ID who is submitting
+  gameId?: string                 // Optional game context
+}
+```
+
+**Response** (200 OK):
+```typescript
+{
+  success: boolean
+  totalTests: number              // Total number of test cases
+  passedTests: number             // Number of passed test cases
+  failedTests: number             // Number of failed test cases
+  executionTime: string           // Execution time (e.g., "0.024")
+  memory: number                  // Memory used in KB
+  testResults: [
+    {
+      testCase: number            // Test case number (1-indexed)
+      input: string               // Test case input description
+      expected: string            // Expected output
+      actual: string              // Actual output from user code
+      status: "PASS" | "FAIL" | "ERROR"
+      error?: string              // Error message if status is ERROR
+    }
+  ]
+  allTestsPassed: boolean         // True if all tests passed
+  compileError?: string           // Compilation error if any
+  runtimeError?: string           // Runtime error if any
+}
+```
+
+**How It Works**:
+1. User submits code with selected language
+2. Server fetches problem from database (with testCases and correctOutput)
+3. Code is executed via Judge0 API with testCases as stdin (HackerRank style)
+4. User's code reads from stdin, processes, and writes to stdout line by line
+5. Server compares stdout with correctOutput line by line
+6. Returns detailed test results with pass/fail status for each test case
+
+**Judge0 Integration**:
+- Uses Judge0 CE via RapidAPI
+- Submission with `wait=true` for immediate results
+- Language IDs: JavaScript (63), Python (71), Java (62), C++ (54)
+- Test cases provided as stdin, output compared line by line
+
+**Error Responses**:
+- `400 Bad Request` - Missing required fields or invalid problemId/language
+- `404 Not Found` - Problem not found
+- `500 Internal Server Error` - Database/Judge0 API error
+
 ## WebSocket Events (Socket.IO)
 
 ### Connection
@@ -186,20 +251,29 @@ server/
 ├── index.ts                 # Main server entry point
 ├── auth.ts                  # Better-Auth configuration
 ├── package.json             # Dependencies and scripts
+├── scripts/
+│   └── seedTwoSum.ts       # Seed script for Two Sum problem
 ├── src/
 │   ├── config/
 │   │   └── database.ts      # MongoDB connection setup
 │   ├── controllers/         # Business logic
 │   │   ├── gameController.ts    # Game CRUD operations
-│   │   └── userController.ts    # User operations
+│   │   ├── userController.ts    # User operations
+│   │   └── problemController.ts # Problem submission and testing
 │   ├── models/             # Mongoose schemas
-│   │   └── Game.ts         # Game model definition
+│   │   ├── Game.ts         # Game model definition
+│   │   └── Problem.ts      # Problem model definition
 │   ├── routes/             # Express route definitions
 │   │   ├── apiRoutes.ts    # Main API router
 │   │   ├── gameRoutes.ts   # Game-specific routes
-│   │   └── userRoutes.ts   # User-specific routes
+│   │   ├── userRoutes.ts   # User-specific routes
+│   │   └── problemRoutes.ts # Problem-specific routes
+│   ├── services/           # External service integrations
+│   │   ├── codeStorage.ts  # In-memory code storage
+│   │   └── judge0Service.ts # Judge0 API integration
 │   ├── types/              # TypeScript type definitions
-│   │   └── game.ts         # Game-related interfaces and enums
+│   │   ├── game.ts         # Game-related interfaces and enums
+│   │   └── problem.ts      # Problem-related interfaces and enums
 │   └── utils/              # Helper functions
 │       └── linkGenerator.ts # Invite link/code generation
 └── CLAUDE.md               # This file
@@ -233,6 +307,46 @@ server/
 - `spectatorCode` - Unique index for fast lookups
 - `hostId` - Index for user challenge queries
 
+### Problem Collection
+```typescript
+{
+  _id: ObjectId                    // Auto-generated MongoDB ID
+  title: String (required)         // Problem title (e.g., "Two Sum")
+  description: String (required)   // Full problem description with examples
+  difficulty: String (enum)        // easy|medium|hard
+  testCases: String (required)     // Test cases in line-by-line format (stdin)
+  correctOutput: String (required) // Expected outputs line by line
+  initialCodes: {                  // Starter code for each language
+    python: String (required)      // Python starter code (HackerRank style)
+    javascript: String (required)  // JavaScript starter code
+    java: String (required)        // Java starter code
+    cpp: String (required)         // C++ starter code
+  }
+  createdAt: Date (auto)           // Creation timestamp
+  updatedAt: Date (auto)           // Last update timestamp
+}
+```
+
+**Test Case Format** (HackerRank style):
+```
+4              # First line: array length
+2 7 11 15      # Second line: array elements
+9              # Third line: target
+3              # Next test case starts...
+3 2 4
+6
+```
+
+**Expected Output Format** (line by line):
+```
+0 1            # Output for test case 1
+1 2            # Output for test case 2
+0 1            # Output for test case 3
+```
+
+**Indexes**:
+- `title` - Index for problem lookups
+
 ## Environment Configuration
 
 ```env
@@ -247,6 +361,11 @@ MONGODB_URI=mongodb://localhost:27017/codesmash
 BETTER_AUTH_SECRET=your-secret-key-here
 GOOGLE_CLIENT_ID=your-google-oauth-id
 GOOGLE_CLIENT_SECRET=your-google-oauth-secret
+
+# Judge0 API (for code execution)
+JUDGE0_URL=https://judge0-ce.p.rapidapi.com
+RAPIDAPI_KEY=your-rapidapi-key-here
+RAPIDAPI_HOST=judge0-ce.p.rapidapi.com
 ```
 
 ## Client Integration
