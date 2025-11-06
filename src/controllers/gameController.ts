@@ -75,8 +75,8 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
     const memoryCode = codeStorage.getGameCodes(gameId);
     const problem = game.problem as IProblem
     const codes = memoryCode || {
-      hostCode: game.hostCode || problem.initialCodes.javascript,
-      challengerCode: game.challengerCode || problem.initialCodes.javascript
+      hostCode: game.hostCode || "",
+      challengerCode: game.challengerCode || ""
     };
 
     const gameData = {
