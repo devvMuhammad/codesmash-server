@@ -14,7 +14,7 @@ export const createGame = async (req: Request, res: Response): Promise<void> => 
     const inviteCode = generateUniqueCode(8);
 
     // find a problem for the desired difficulty but for now dummy
-    const problemIds = await Problem.find({}, { _id: 1 })
+    const problemIds = await Problem.find({ difficulty }, { _id: 1 })
     const problemId = problemIds[Math.floor(Math.random() * problemIds.length)]!._id as string;
 
     const newGame = new Game({
