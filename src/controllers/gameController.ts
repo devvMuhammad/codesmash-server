@@ -495,8 +495,6 @@ export const getLiveBattles = async (req: Request, res: Response): Promise<void>
       .limit(20)
       .lean();
 
-    console.log("games", games)
-
     // Calculate remaining time for each game
     const liveBattles = games.map(game => {
       const startedAt = game.startedAt ? new Date(game.startedAt).getTime() : Date.now();

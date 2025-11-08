@@ -85,14 +85,15 @@ export function formatRecentBattles(completedGames: PopulatedGame[], userId: str
       id: game._id?.toString() || '',
       opponent: {
         name: opponent?.name || 'Unknown',
-        username: opponent?.username
+        username: opponent?.username || 'unknown'
       },
       problem: {
         title: game.problem?.title || 'Unknown Problem',
         difficulty: game.problem?.difficulty || 'easy' as 'easy' | 'medium' | 'hard'
       },
       result,
-      completedAt: game.completedAt ? formatTimeAgo(game.completedAt) : 'Unknown',
+      timeAgo: game.completedAt ? formatTimeAgo(game.completedAt) : 'Unknown',
+      completedAt: game.completedAt ? game.completedAt.toISOString() : new Date().toISOString(),
       duration: (game.startedAt && game.completedAt)
         ? formatDuration(game.startedAt, game.completedAt)
         : '0m 0s',
