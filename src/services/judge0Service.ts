@@ -43,6 +43,7 @@ export async function executeCode(
     }
 
     const data = await response.json() as Judge0Response;
+    console.log("RESPONSE FROM JUDGE0", data);
     return data;
   } catch (error) {
     console.error("Error executing code with Judge0:", error);

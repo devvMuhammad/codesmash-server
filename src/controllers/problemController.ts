@@ -5,7 +5,8 @@ import {
   type SubmitCodeRequest,
   type SubmitCodeResponse,
   type TestResult,
-  type SupportedLanguage
+  type SupportedLanguage,
+  Judge0StatusId
 } from '../types/problem';
 import mongoose from 'mongoose';
 import { LANGUAGE_IDS } from '../config/game';
@@ -49,7 +50,84 @@ export const submitCode = async (req: Request, res: Response): Promise<void> => 
 
     // Execute code with Judge0
     const judge0Result = await executeCode(code, languageId, problem.testCases);
-    // Compare output line by line
+
+    // Check Judge0 status for errors
+    const statusId = judge0Result.status.id;
+    const statusDescription = judge0Result.status.description;
+
+    // Handle Compilation Error
+    if (statusId === Judge0StatusId.COMPILATION_ERROR) {
+      const response: SubmitCodeResponse = {
+        success: false,
+        totalTests: 0,
+        passedTests: 0,
+        failedTests: 0,
+        executionTime: judge0Result.time || "0",
+        memory: judge0Result.memory || 0,
+        testResults: [],
+        allTestsPassed: false,
+        compileError: judge0Result.compile_output || judge0Result.message || "Compilation failed",
+        statusDescription
+      };
+      res.status(200).json(response);
+      return;
+    }
+
+    // Handle Runtime Errors (status codes 7-12)
+    if (statusId >= Judge0StatusId.RUNTIME_ERROR_SIGSEGV && statusId <= Judge0StatusId.RUNTIME_ERROR_OTHER) {
+      const response: SubmitCodeResponse = {
+        success: false,
+        totalTests: 0,
+        passedTests: 0,
+        failedTests: 0,
+        executionTime: judge0Result.time || "0",
+        memory: judge0Result.memory || 0,
+        testResults: [],
+        allTestsPassed: false,
+        runtimeError: judge0Result.stderr || judge0Result.message || "Runtime error occurred",
+        statusDescription
+      };
+      res.status(200).json(response);
+      return;
+    }
+
+    // Handle Time Limit Exceeded
+    if (statusId === Judge0StatusId.TIME_LIMIT_EXCEEDED) {
+      const response: SubmitCodeResponse = {
+        success: false,
+        totalTests: 0,
+        passedTests: 0,
+        failedTests: 0,
+        executionTime: judge0Result.time || "0",
+        memory: judge0Result.memory || 0,
+        testResults: [],
+        allTestsPassed: false,
+        runtimeError: "Your solution exceeded the time limit",
+        statusDescription
+      };
+      res.status(200).json(response);
+      return;
+    }
+
+    // Handle Internal Error or Exec Format Error
+    if (statusId === Judge0StatusId.INTERNAL_ERROR || statusId === Judge0StatusId.EXEC_FORMAT_ERROR) {
+      const response: SubmitCodeResponse = {
+        success: false,
+        totalTests: 0,
+        passedTests: 0,
+        failedTests: 0,
+        executionTime: judge0Result.time || "0",
+        memory: judge0Result.memory || 0,
+        testResults: [],
+        allTestsPassed: false,
+        runtimeError: judge0Result.message || "System error occurred",
+        statusDescription
+      };
+      res.status(200).json(response);
+      return;
+    }
+
+    // Process test results for ACCEPTED or WRONG_ANSWER status
     const actualOutput = judge0Result.stdout?.trim() || "";
     const expectedOutput = problem.correctOutput.trim();
 
@@ -83,14 +161,15 @@ export const submitCode = async (req: Request, res: Response): Promise<void> => 
     const allTestsPassed = passedTests === totalTests;
 
     const response: SubmitCodeResponse = {
-      success: true,
+      success: allTestsPassed,
       totalTests,
       passedTests,
       failedTests,
       executionTime: judge0Result.time,
       memory: judge0Result.memory,
       testResults,
-      allTestsPassed
+      allTestsPassed,
+      statusDescription
     };
 
     res.status(200).json(response);
