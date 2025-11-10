@@ -14,7 +14,7 @@ import "./src/models/User";
 import "./src/models/Game";
 import "./src/models/Problem";
 
-dotenv.config();
+dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.dev' });
 
 const port = process.env.PORT;
 if (!port) {
