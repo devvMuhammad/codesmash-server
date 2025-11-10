@@ -95,9 +95,11 @@ export const getUserChallenges = async (req: Request, res: Response): Promise<vo
     }
 
     // Find all games hosted by this user, sorted by creation date (newest first)
+    // Populate host, challenger, and problem details
     const challenges = await Game.find({ host: userId })
       .populate('host', 'name email image id')
       .populate('challenger', 'name email image id')
+      .populate('problem', '_id title difficulty description')
       .sort({ createdAt: -1 })
       .lean();
 

@@ -46,18 +46,23 @@ export function calculateStats(completedGames: PopulatedGame[], userId: string) 
 // Calculate difficulty breakdown
 export function calculateDifficultyBreakdown(completedGames: PopulatedGame[], userId: string) {
   const difficultyBreakdown = {
-    easy: { wins: 0, losses: 0, games: 0 },
-    medium: { wins: 0, losses: 0, games: 0 },
-    hard: { wins: 0, losses: 0, games: 0 }
+    easy: { wins: 0, losses: 0, draws: 0, games: 0 },
+    medium: { wins: 0, losses: 0, draws: 0, games: 0 },
+    hard: { wins: 0, losses: 0, draws: 0, games: 0 }
   };
 
   completedGames.forEach(game => {
     const difficulty = game.difficulty;
     if (difficulty in difficultyBreakdown) {
       difficultyBreakdown[difficulty].games++;
-      if (game.result?.winner === userId) {
+      if (!game.result?.winner) {
+        // Draw case - no winner
+        difficultyBreakdown[difficulty].draws++;
+      } else if (game.result.winner === userId) {
+        // Win case
         difficultyBreakdown[difficulty].wins++;
-      } else if (game.result?.winner) {
+      } else {
+        // Loss case
         difficultyBreakdown[difficulty].losses++;
       }
     }
