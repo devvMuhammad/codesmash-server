@@ -20,6 +20,16 @@ const problemSchema = new Schema<IProblemDocument>({
     type: String,
     required: true,
   },
+  sampleTestCases: {
+    type: String,
+    required: true,
+    default: ""
+  },
+  sampleTestCasesOutput: {
+    type: String,
+    required: true,
+    default: ""
+  },
   initialCodes: {
     python: {
       type: String,
