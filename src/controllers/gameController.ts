@@ -341,41 +341,42 @@ export const startBattle = async (gameId: string, userId: string): Promise<boole
   }
 };
 
-export const markChallengerReady = async (gameId: string, userId: string): Promise<boolean> => {
+export const markChallengerReady = async (gameId: string, userId: string): Promise<{ success: boolean; game?: any }> => {
   try {
     if (!gameId || !userId) {
       console.error('Missing gameId or userId for challenger ready');
-      return false;
+      return { success: false };
     }
 
     const game = await Game.findById(gameId);
     if (!game) {
       console.error(`Game ${gameId} not found when challenger ${userId} tried to mark ready`);
-      return false;
+      return { success: false };
     }
 
     // Verify user is the challenger
     if (!game.challenger || game.challenger.toString() !== userId) {
       console.error(`User ${userId} is not the challenger for game ${gameId}`);
-      return false;
+      return { success: false };
     }
 
     // Verify game is in ready_to_start state
     if (game.status !== GameStatus.READY_TO_START) {
       console.error(`Game ${gameId} is not in ready_to_start state (current: ${game.status})`);
-      return false;
+      return { success: false };
     }
 
-    // Update game status to in_progress
+    // Update game status to in_progress and set startedAt timestamp
     game.status = GameStatus.IN_PROGRESS;
+    game.startedAt = new Date();
     await game.save();
 
-    console.log(`Challenger ${userId} marked ready for game ${gameId} - status updated to in_progress`);
-    return true;
+    console.log(`Challenger ${userId} marked ready for game ${gameId} - status updated to in_progress, timer started`);
+    return { success: true, game };
 
   } catch (error) {
     console.error('Error in markChallengerReady:', error);
-    return false;
+    return { success: false };
   }
 };
 
@@ -425,9 +426,10 @@ export const forfeitGame = async (gameId: string, userId: string, role: string):
       message: `${forfeiterName} forfeited the game. ${winnerName} wins by forfeit!`
     };
 
-    // Update game status and result
+    // Update game status, result, and completion timestamp
     game.status = GameStatus.COMPLETED;
     game.result = gameResult;
+    game.completedAt = new Date();
     await game.save();
 
     console.log(`User ${userId} (${role}) forfeited game ${gameId} - winner: ${winnerId}`);
