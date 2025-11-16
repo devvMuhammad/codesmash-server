@@ -79,6 +79,9 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
       challengerCode: game.challengerCode || ""
     };
 
+    // Calculate totalTestCases from correctOutput
+    const totalTestCases = problem.correctOutput ? problem.correctOutput.trim().split('\n').length : 0;
+
     const gameData = {
       ...game,
       _id: game._id.toString(),
@@ -86,7 +89,10 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
       challengerId: typeof game.challenger === 'object' ? game.challenger._id?.toString() : game.challenger,
       hostCode: codes.hostCode,
       challengerCode: codes.challengerCode,
-      problem,
+      problem: {
+        ...problem,
+        totalTestCases
+      },
     };
 
     res.status(200).json(gameData);
@@ -441,5 +447,60 @@ export const forfeitGame = async (gameId: string, userId: string, role: string):
   }
 };
 
+export const getLiveBattles = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const games = await Game.find({
+      status: GameStatus.IN_PROGRESS
+    })
+      .populate('host', 'name email image id')
+      .populate('challenger', 'name email image id')
+      .populate('problem', 'title difficulty')
+      .sort({ startedAt: -1 })
+      .limit(20)
+      .lean();
 
+    // Calculate remaining time for each game
+    const liveBattles = games.map(game => {
+      const startedAt = game.startedAt ? new Date(game.startedAt).getTime() : Date.now();
+      const timeLimit = game.timeLimit || 0;
+      const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+      const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
+
+      return {
+        ...game,
+        _id: game._id.toString(),
+        remainingSeconds
+      };
+    });
+
+    res.status(200).json(liveBattles);
+  } catch (error) {
+    console.error('Error fetching live battles:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getOpenChallenges = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const games = await Game.find({
+      status: GameStatus.WAITING,
+      challenger: { $exists: false }
+    })
+      .populate('host', 'name email image id')
+      .populate('problem', 'title difficulty')
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    const openChallenges = games.map(game => ({
+      ...game,
+      _id: game._id.toString()
+    }));
+
+    res.status(200).json(openChallenges);
+  } catch (error) {
+    console.error('Error fetching open challenges:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
