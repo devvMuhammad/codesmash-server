@@ -82,6 +82,14 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
     // Calculate totalTestCases from correctOutput
     const totalTestCases = problem.correctOutput ? problem.correctOutput.trim().split('\n').length : 0;
 
+    // Calculate timeRemaining if game is in progress
+    let timeRemaining = game.timeLimit; // Default to full time limit
+    if (game.startedAt && game.status === GameStatus.IN_PROGRESS) {
+      const startedAt = new Date(game.startedAt).getTime();
+      const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+      timeRemaining = Math.max(0, game.timeLimit - elapsedSeconds);
+    }
+
     const gameData = {
       ...game,
       _id: game._id.toString(),
@@ -93,6 +101,7 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
         ...problem,
         totalTestCases
       },
+      timeRemaining
     };
 
     res.status(200).json(gameData);
