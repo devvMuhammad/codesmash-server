@@ -173,6 +173,7 @@ class GameTimerService {
 
   /**
    * Handle time expiration - update DB and notify clients
+   * Determines winner based on number of test cases passed
    */
   private async handleTimeExpired(data: GameTimerJobData) {
     const { gameId } = data;
@@ -180,8 +181,33 @@ class GameTimerService {
     try {
       console.log(`[Timer] Time expired for game ${gameId}: ${new Date()}`);
 
-      // find host id from game
-      const hostId = (await Game.findById(gameId))?.host as string;
+      // Get game with test progress
+      const currentGame = await Game.findById(gameId);
+      if (!currentGame) {
+        console.error(`[Timer] Game ${gameId} not found when handling expiration`);
+        return;
+      }
+
+      // Determine winner based on tests passed
+      const hostTestsPassed = currentGame.hostTestsPassed || 0;
+      const challengerTestsPassed = currentGame.challengerTestsPassed || 0;
+
+      let winner: string | undefined;
+      let message: string;
+
+      if (hostTestsPassed > challengerTestsPassed) {
+        // Host wins
+        winner = currentGame.host as string;
+        message = `Time's up! Host won by passing ${hostTestsPassed} test cases vs ${challengerTestsPassed}.`;
+      } else if (challengerTestsPassed > hostTestsPassed) {
+        // Challenger wins
+        winner = currentGame.challenger as string;
+        message = `Time's up! Challenger won by passing ${challengerTestsPassed} test cases vs ${hostTestsPassed}.`;
+      } else {
+        // Draw (same number of tests passed)
+        winner = undefined;
+        message = `Time's up! It's a draw - both players passed ${hostTestsPassed} test cases.`;
+      }
 
       // Update game in database
       const game = await Game.findByIdAndUpdate(
@@ -191,15 +217,15 @@ class GameTimerService {
           completedAt: new Date(),
           result: {
             reason: GameResultReason.TIME_UP,
-            winner: hostId, // TODO: Determine winner by test cases passed (for now just make the host the winner)
-            message: 'Time expired! The battle has ended.'
+            winner,
+            message
           }
         },
         { new: true }
       ).populate('host challenger', 'name email image');
 
       if (!game) {
-        console.error(`[Timer] Game ${gameId} not found when handling expiration`);
+        console.error(`[Timer] Game ${gameId} not found after update`);
         return;
       }
 
@@ -212,7 +238,7 @@ class GameTimerService {
           status: GameStatus.COMPLETED
         });
 
-        console.log(`[Timer] Game ${gameId} ended due to time expiration`);
+        console.log(`[Timer] Game ${gameId} ended due to time expiration - Winner: ${winner || 'Draw'}`);
       } else {
         console.error('[Timer] Socket.IO instance not available');
       }
