@@ -459,7 +459,10 @@ export const forfeitGame = async (gameId: string, userId: string, role: string):
 export const getLiveBattles = async (req: Request, res: Response): Promise<void> => {
   try {
     const games = await Game.find({
-      status: GameStatus.IN_PROGRESS
+      $or: [
+        { status: GameStatus.IN_PROGRESS },
+        { status: GameStatus.READY_TO_START }
+      ]
     })
       .populate('host', 'name email image id')
       .populate('challenger', 'name email image id')
@@ -467,6 +470,8 @@ export const getLiveBattles = async (req: Request, res: Response): Promise<void>
       .sort({ startedAt: -1 })
       .limit(20)
       .lean();
+
+    console.log("games", games)
 
     // Calculate remaining time for each game
     const liveBattles = games.map(game => {
@@ -491,9 +496,17 @@ export const getLiveBattles = async (req: Request, res: Response): Promise<void>
 
 export const getOpenChallenges = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { userId } = req.query as { userId: string | undefined };
+
+    if (!userId) {
+      res.status(400).json({ error: 'User ID is required' });
+      return;
+    }
+
     const games = await Game.find({
       status: GameStatus.WAITING,
-      challenger: { $exists: false }
+      challenger: { $exists: false },
+      host: { $ne: userId }
     })
       .populate('host', 'name email image id')
       .populate('problem', 'title difficulty')
@@ -505,6 +518,8 @@ export const getOpenChallenges = async (req: Request, res: Response): Promise<vo
       ...game,
       _id: game._id.toString()
     }));
+
+    console.log("open", openChallenges)
 
     res.status(200).json(openChallenges);
   } catch (error) {
