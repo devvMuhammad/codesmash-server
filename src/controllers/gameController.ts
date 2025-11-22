@@ -165,6 +165,23 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Check if user is already the challenger
+    if (game.challenger?.toString() === userId) {
+      // Update challenger joined status if not already set
+      if (!game.challengerJoined) {
+        game.challengerJoined = true;
+        await game.save();
+      }
+
+      const response: JoinGameResponse = {
+        success: true,
+        role: 'challenger',
+        message: 'You are already a challenger in this game.'
+      };
+      res.status(200).json(response);
+      return;
+    }
+
     // check if invite code is present
     if (!inviteCode) {
       res.status(400).json({
@@ -179,23 +196,6 @@ export const joinGame = async (req: Request, res: Response): Promise<void> => {
     if (game.inviteCode === inviteCode) {
       // Check if there's already a challenger
       if (game.challenger) {
-
-        // check if the existing challenger is the same as the current user
-        if (game.challenger.toString() === userId) {
-          // Update challenger joined status if not already set
-          if (!game.challengerJoined) {
-            game.challengerJoined = true;
-            await game.save();
-          }
-
-          const response: JoinGameResponse = {
-            success: true,
-            role: 'challenger',
-            message: 'You are already a challenger in this game.'
-          };
-          res.status(200).json(response);
-          return;
-        }
 
         const response: JoinGameResponse = {
           success: false,
