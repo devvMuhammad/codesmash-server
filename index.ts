@@ -224,7 +224,7 @@ io.on("connection", (socket) => {
     console.log("socket disconnected", socket.id);
 
 
-    await leaveGame(gameId, user.id, role);
+    await leaveGame(gameId, user?.id, role);
 
     socket.to(gameId).emit("player_disconnected", {
       role: role,
