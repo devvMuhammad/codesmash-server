@@ -516,11 +516,6 @@ export const getOpenChallenges = async (req: Request, res: Response): Promise<vo
   try {
     const { userId } = req.query as { userId: string | undefined };
 
-    if (!userId) {
-      res.status(400).json({ error: 'User ID is required' });
-      return;
-    }
-
     const games = await Game.find({
       status: GameStatus.WAITING,
       challenger: { $exists: false },
