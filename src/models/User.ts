@@ -20,6 +20,11 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: false
   },
+  aura: {
+    type: Number,
+    default: 1000,
+    required: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
