@@ -18,6 +18,7 @@ import { getUserRoleInGame } from '../utils/gameHelpers';
 import { io } from '../../index';
 import { gameTimerService } from '../services/gameTimerQueue';
 import { GameStatus, GameResultReason } from '../types/game';
+import { auraService } from '../services/auraService';
 
 /**
  * Handle test progress update and game completion
@@ -60,6 +61,10 @@ const handleTestProgressUpdate = async (
     const allTestsPassed = passedTests === totalTests;
     console.log(`User ${userId} (${role}) improved test progress in game ${gameId}: ${previousPassed} → ${passedTests}/${totalTests}`);
 
+    // Award AURA for newly passed tests
+    const newlyPassedTests = passedTests - previousPassed;
+    await auraService.handleTestProgress(userId, newlyPassedTests);
+
     // If all tests passed, end the game
     if (allTestsPassed) {
       await gameTimerService.clearTimer(gameId);
@@ -74,6 +79,16 @@ const handleTestProgressUpdate = async (
       game.result = result;
       game.completedAt = new Date();
       await game.save();
+
+      // Award AURA for match completion (winner/loser)
+      const opponentId = role === 'host' ? game.challenger?.toString() : game.host.toString();
+      if (opponentId) {
+        await auraService.handleMatchCompletion(
+          userId,        // Winner (solved all tests)
+          opponentId,    // Loser (opponent)
+          'Full solution'
+        );
+      }
 
       // Emit game finished to both players
       io.to(gameId).emit('game_finished', {
