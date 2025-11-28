@@ -11,6 +11,16 @@ import { leaveGame, handleChallengerQuit, startBattle, markChallengerReady, forf
 import { codeStorage } from "./src/services/codeStorage";
 import { gameTimerService } from "./src/services/gameTimerQueue";
 import redisClient from "./src/config/redis";
+import type {
+  SocketHandshakeAuth,
+  CodeUpdatePayload,
+  PlayerJoinedPayload,
+  ChallengerQuitPayload,
+  BattleStartedPayload,
+  GameInProgressPayload,
+  OpponentCodeUpdatePayload,
+  GameFinishedPayload
+} from "./src/types/socket";
 // Import models to register them with Mongoose
 import "./src/models/User";
 import "./src/models/Game";
@@ -79,10 +89,9 @@ app.use("/api", apiRoutes);
 io.on("connection", (socket) => {
   console.log("socket connected", socket.id);
 
-  // Extract gameId from auth data and join the room
-  const gameId = socket.handshake.auth.gameId;
-  const role = socket.handshake.auth.role;
-  const user = socket.handshake.auth.user;
+  // Extract auth data from socket handshake with proper typing
+  const { gameId, role, user } = socket.handshake.auth as SocketHandshakeAuth;
+
 
   if (gameId) {
     socket.join(gameId);
@@ -94,10 +103,11 @@ io.on("connection", (socket) => {
   // don't send player notification for "spectator"
   if (role !== "spectator") {
     console.log(`emitting event player_joined to ${gameId}`)
-    socket.to(gameId).emit("player_joined", {
-      role: role,
-      user: user,
-    });
+    const payload: PlayerJoinedPayload = {
+      role,
+      user,
+    };
+    socket.to(gameId).emit("player_joined", payload);
   }
 
   // this is a special event for the challenger to quit the game BEFORE THE GAME STARTS
@@ -113,9 +123,10 @@ io.on("connection", (socket) => {
 
     if (success) {
       // Notify the host that challenger has quit
-      socket.to(gameId).emit("challenger_quit", {
-        user: user,
-      });
+      const payload: ChallengerQuitPayload = {
+        user,
+      };
+      socket.to(gameId).emit("challenger_quit", payload);
 
       console.log(`Challenger ${user.id} successfully quit game ${gameId}`);
     } else {
@@ -135,9 +146,10 @@ io.on("connection", (socket) => {
 
     if (success) {
       // Notify the challenger that host has started the battle
-      io.to(gameId).emit("battle_started", {
-        user: user,
-      });
+      const payload: BattleStartedPayload = {
+        user,
+      };
+      io.to(gameId).emit("battle_started", payload);
 
       console.log(`Host ${user.id} successfully started battle for game ${gameId}`);
     } else {
@@ -164,11 +176,12 @@ io.on("connection", (socket) => {
       );
 
       // Notify both players that game is now in progress
-      io.to(gameId).emit("game_in_progress", {
-        user: user,
+      const payload: GameInProgressPayload = {
+        user,
         startedAt: result.game.startedAt,
         timeLimit: result.game.timeLimit
-      });
+      };
+      io.to(gameId).emit("game_in_progress", payload);
 
       console.log(`Challenger ${user.id} marked ready - game ${gameId} is now in progress, timer started`);
     } else {
@@ -176,7 +189,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("code_update", (data) => {
+  socket.on("code_update", (data: CodeUpdatePayload) => {
     console.log("code_update event received", socket.id, "role:", role);
 
     if (role !== "host" && role !== "challenger") {
@@ -187,10 +200,11 @@ io.on("connection", (socket) => {
     const { code } = data;
 
     // Update the player's code using the service
-    codeStorage.updatePlayerCode(gameId, role as 'host' | 'challenger', code);
+    codeStorage.updatePlayerCode(gameId, role, code);
 
     // Broadcast to opponent
-    socket.to(gameId).emit("opponent_code_update", { code, role });
+    const payload: OpponentCodeUpdatePayload = { code, role };
+    socket.to(gameId).emit("opponent_code_update", payload);
     console.log(`Code updated for ${role} in game ${gameId}, broadcasted to opponent`);
   });
 
@@ -209,10 +223,11 @@ io.on("connection", (socket) => {
       await gameTimerService.clearTimer(gameId);
 
       // Notify both players that game has finished
-      io.to(gameId).emit("game_finished", {
+      const payload: GameFinishedPayload = {
         result: forfeitResult.result,
         gameStatus: "completed"
-      });
+      };
+      io.to(gameId).emit("game_finished", payload);
 
       console.log(`User ${user.id} (${role}) successfully forfeited game ${gameId}, timer cleared`);
     } else {
