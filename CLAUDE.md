@@ -261,6 +261,60 @@ Array<{
 - `400 Bad Request` - Missing userId
 - `500 Internal Server Error` - Database/server error
 
+### Feedback Endpoints
+
+#### Submit Feedback
+```http
+POST /api/feedback
+Content-Type: application/json
+```
+
+**Description**: Allows users to submit feedback, questions, or contact messages. Data is stored in the "feedback" collection.
+
+**Request Body**:
+```typescript
+{
+  name: string          // User's name (required, max 100 chars)
+  email: string         // User's email (required, valid email format)
+  message: string       // Feedback message (required, 10-1000 chars)
+}
+```
+
+**Response** (201 Created):
+```typescript
+{
+  success: boolean
+  message: string                    // Success/error message
+  feedbackId?: string                // MongoDB ObjectId (optional, included on success)
+}
+```
+
+**Validation Rules**:
+- `name`: Required, max 100 characters, trimmed
+- `email`: Required, valid email format, trimmed and lowercased
+- `message`: Required, min 10 characters, max 1000 characters, trimmed
+
+**Error Responses**:
+- `400 Bad Request` - Missing required fields or invalid email format
+  ```typescript
+  {
+    success: false
+    message: "All fields (name, email, message) are required"
+  }
+  // or
+  {
+    success: false
+    message: "Invalid email format"
+  }
+  ```
+- `500 Internal Server Error` - Database/server error
+  ```typescript
+  {
+    success: false
+    message: "Internal server error. Please try again later."
+  }
+  ```
+
 ### Problem Endpoints
 
 #### Submit Code for Problem
@@ -549,6 +603,26 @@ server/
 **Indexes**:
 - `email` - Unique index for authentication lookups
 - `aura` - Index for leaderboard queries (sorted descending)
+
+### Feedback Collection
+```typescript
+{
+  _id: ObjectId                    // Auto-generated MongoDB ID
+  name: String (required)          // User's name (trimmed)
+  email: String (required)         // User's email (trimmed, lowercased)
+  message: String (required)       // Feedback message (trimmed)
+  createdAt: Date (auto)           // Creation timestamp
+  updatedAt: Date (auto)           // Last update timestamp
+}
+```
+
+**Validation**:
+- `name`: Required, trimmed, max 100 characters
+- `email`: Required, trimmed, lowercased
+- `message`: Required, trimmed, min 10 characters, max 1000 characters
+
+**Indexes**:
+- No special indexes (basic CRUD operations only)
 
 ## Environment Configuration
 
