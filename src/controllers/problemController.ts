@@ -48,7 +48,7 @@ const handleTestProgressUpdate = async (
     const field = role === 'host' ? 'hostTestsPassed' : 'challengerTestsPassed';
     const previousPassed = game[field];
 
-    // Only update if improved
+    // only update if improved
     if (passedTests <= previousPassed) {
       console.log(`No improvement for ${role} in game ${gameId}: ${passedTests} <= ${previousPassed}`);
       return;
