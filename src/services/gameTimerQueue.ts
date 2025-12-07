@@ -221,7 +221,7 @@ class GameTimerService {
       }
       // If draw (winner === undefined), no aura changes (DRAW = 0 points)
 
-      // Update game in database
+      // update game in database
       const game = await Game.findByIdAndUpdate(
         gameId,
         {
