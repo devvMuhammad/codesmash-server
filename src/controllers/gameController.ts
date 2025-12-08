@@ -55,7 +55,7 @@ export const getGameById = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Validate if gameId is a valid MongoDB ObjectId
+    // validate if gameId is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(gameId)) {
       res.status(400).json({ error: 'Invalid game ID format' });
       return;
