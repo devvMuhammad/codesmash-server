@@ -26,7 +26,7 @@ export const createFeedback = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Basic email validation
+    // basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       res.status(400).json({
