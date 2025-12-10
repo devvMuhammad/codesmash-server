@@ -6,7 +6,7 @@ interface GameCodeData {
 
 class CodeStorageService {
   private gameCodeStorage = new Map<string, GameCodeData>();
-
+// update the player's code in the game code storage
   updatePlayerCode(gameId: string, role: 'host' | 'challenger', code: string): void {
     const gameCode = this.gameCodeStorage.get(gameId) || {
       hostCode: "",
