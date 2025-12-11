@@ -3,7 +3,7 @@ import type { IGame } from '../types/game';
 import { DifficultyType, GameStatus, GameResultReason } from '../types/game';
 
 export interface IGameDocument extends Omit<IGame, '_id'>, Document { }
-
+// game schema for the database
 const gameSchema = new Schema<IGameDocument>({
   host: {
     type: Schema.Types.ObjectId,
