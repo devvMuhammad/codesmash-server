@@ -15,6 +15,8 @@ export const AURA_VALUES = {
  * AURA Service
  * Manages user AURA points with simple add/deduct operations
  */
+
+// Enhanced Aura Service
 class AuraService {
   /**
    * Add AURA points to a user
