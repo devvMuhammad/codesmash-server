@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 import { submitCodeLimitConfig, runCodeLimitConfig } from '../config/rateLimiter';
 
 /**
- * Rate limiter for code submission endpoint
+ * Rate limiter for code submission endpoint to not overload execution service
  * 
  * Applies per-IP rate limiting to protect the code execution service.
  * Uses in-memory store by default, can be replaced with alternative storage.
