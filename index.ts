@@ -189,6 +189,10 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("ai_analytics",(data:any)=>{
+    console.log("ai_analytics event received", socket.id, "role:", role);
+  })
+
   socket.on("code_update", (data: CodeUpdatePayload) => {
     console.log("code_update event received", socket.id, "role:", role);
 
